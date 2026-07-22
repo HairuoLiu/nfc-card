@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>名片配置编辑器 · Card Editor</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<script src="config.js"></script>
+<style>
+  :root{
+    --bg:#0d0d0d; --panel:#161616; --panel2:#1d1d1d; --line:#2c2c2c;
+    --text:#f2f2f2; --dim:#9a9a9a; --accent:#FFB800;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.5;
+    padding:24px 16px 60px; max-width:920px; margin:0 auto;
+  }
+  h1{font-size:22px;margin-bottom:4px;}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:20px;}
+  .layout{display:grid;grid-template-columns:1fr;gap:22px;}
+  @media(min-width:760px){.layout{grid-template-columns:1fr 320px;align-items:start;}}
+  .card-sec{
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:18px 16px;margin-bottom:16px;
+  }
+  .card-sec h2{font-size:15px;margin-bottom:12px;color:var(--accent);}
+  label{display:block;font-size:12.5px;color:var(--dim);margin:12px 0 5px;}
+  input[type=text],input[type=url],textarea,select{
+    width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+    color:var(--text);font-size:14px;padding:10px 12px;font-family:inherit;
+  }
+  textarea{resize:vertical;min-height:74px;}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);}
+  .row{display:flex;gap:10px;flex-wrap:wrap;}
+  .row>div{flex:1;min-width:120px;}
+  .colors{display:flex;gap:14px;flex-wrap:wrap;}
+  .colors div{flex:1;min-width:90px;}
+  input[type=color]{width:100%;height:42px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:4px;cursor:pointer;}
+  .check{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--text);}
+  .check input{width:18px;height:18px;accent-color:var(--accent);}
+  .social-row{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;}
+  .social-row .top{display:flex;gap:8px;align-items:center;}
+  .social-row .top select{flex:0 0 130px;}
+  .btn{
+    border:none;border-radius:10px;padding:11px 14px;font-size:14px;font-weight:700;cursor:pointer;
+    background:var(--accent);color:#1a1a1a;transition:filter .15s,transform .1s;
+  }
+  .btn:hover{filter:brightness(.94);} .btn:active{transform:scale(.97);}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text);}
+  .btn.sm{padding:7px 10px;font-size:12.5px;}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+  .add-btn{width:100%;margin-top:6px;}
+  /* ---- 预览 ---- */
+  .preview-wrap{position:sticky;top:16px;}
+  .pv-card{
+    border-radius:22px;padding:26px 20px;text-align:center;
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);
+    backdrop-filter:blur(18px);
+  }
+  .pv-avatar{width:84px;height:84px;border-radius:50%;margin:0 auto 12px;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:#111;}
+  .pv-avatar img{width:100%;height:100%;object-fit:cover;}
+  .pv-name{font-size:19px;font-weight:700;}
+  .pv-title{font-size:12.5px;color:rgba(255,255,255,.7);margin:3px 0 10px;}
+  .pv-bio{font-size:12.5px;color:rgba(255,255,255,.7);}
+  .pv-bio div{margin:2px 0;}
+  .pv-socials{display:flex;gap:12px;justify-content:center;margin-top:14px;font-size:20px;}
+  .pv-socials i{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.12);}
+  /* ---- 代码弹层 ---- */
+  .code-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:18px;z-index:50;}
+  .code-modal.show{display:flex;}
+  .code-box{background:#fff;color:#222;border-radius:16px;width:100%;max-width:560px;padding:18px;max-height:84vh;overflow:auto;}
+  .code-box h3{font-size:16px;margin-bottom:10px;color:#111;}
+  .code-box pre{background:#f5f5f5;border-radius:10px;padding:12px;font-size:11.5px;white-space:pre-wrap;word-break:break-all;max-height:42vh;overflow:auto;}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:rgba(0,0,0,.85);color:#fff;padding:10px 18px;border-radius:30px;font-size:13px;opacity:0;transition:.3s;z-index:60;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .hint{font-size:11.5px;color:var(--dim);margin-top:6px;}
+</style>
+</head>
+<body>
+  <h1>🪪 名片配置编辑器</h1>
+  <p class="sub">填完表单 → 点“生成配置” → 下载 <code>config.js</code> 替换进你的仓库即可。零代码基础也能用。</p>
+
+  <div class="layout">
+    <!-- ============ 表单 ============ -->
+    <div>
+      <div class="card-sec">
+        <h2>① 基本信息</h2>
+        <label>姓名 Name</label>
+        <input type="text" id="f_name" />
+        <label>头衔 Title（一句话核心身份）</label>
+        <input type="text" id="f_title" />
+        <label>简介 Bio（每行一条，手机会自动分行）</label>
+        <textarea id="f_bio" placeholder="Experienced in Amazon AWS and Big Data&#10;Software &amp; Hardware Product Maker&#10;3D Parametric Design &amp; E-commerce"></textarea>
+        <p class="hint">提示：每行 = 一句话，生成时会用“ | ”连接。</p>
+      </div>
+
+      <div class="card-sec">
+        <h2>② 头像 Avatar</h2>
+        <div class="row">
+          <div>
+            <label>类型 Type</label>
+            <select id="f_avatar_type">
+              <option value="image">图片 image</option>
+              <option value="text">文字 Logo text</option>
+            </select>
+          </div>
+          <div>
+            <label>文字 Logo（type=text 时）</label>
+            <input type="text" id="f_avatar_text" placeholder="HL" />
+          </div>
+        </div>
+        <label>头像图片地址 imageUrl（type=image 时填，可写 ./avatar.png）</label>
+        <input type="text" id="f_avatar_url" placeholder="./avatar.png" />
+      </div>
+
+      <div class="card-sec">
+        <h2>③ 配色 Theme</h2>
+        <div class="colors">
+          <div><label>背景渐变起</label><input type="color" id="f_grad1" /></div>
+          <div><label>背景渐变止</label><input type="color" id="f_grad2" /></div>
+          <div><label>强调色</label><input type="color" id="f_accent" /></div>
+        </div>
+      </div>
+
+      <div class="card-sec">
+        <h2>④ 通讯录（保存到通讯录用）</h2>
+        <div class="row">
+          <div><label>名 First</label><input type="text" id="f_c_first" /></div>
+          <div><label>姓 Last</label><input type="text" id="f_c_last" /></div>
+        </div>
+        <div class="row">
+          <div><label>公司 Org</label><input type="text" id="f_c_org" /></div>
+          <div><label>职位 Title</label><input type="text" id="f_c_title" /></div>
+        </div>
+        <div class="row">
+          <div><label>电话 Phone</label><input type="text" id="f_c_phone" /></div>
+          <div><label>邮箱 Email</label><input type="text" id="f_c_email" /></div>
+        </div>
+        <label>网站 Website</label>
+        <input type="url" id="f_c_web" />
+      </div>
+
+      <div class="card-sec">
+        <h2>⑤ 社交按钮 Socials</h2>
+        <div id="socials_list"></div>
+        <button class="btn ghost add-btn sm" id="add_social">+ 添加社交按钮</button>
+      </div>
+
+      <div class="card-sec">
+        <h2>⑥ 底部 Footer</h2>
+        <div class="check"><input type="checkbox" id="f_show_phone" /><span>公开显示电话</span></div>
+        <div class="check"><input type="checkbox" id="f_show_email" /><span>公开显示邮箱</span></div>
+        <label>分享按钮文案</label>
+        <input type="text" id="f_share_text" />
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" id="gen_btn">⚙️ 生成 config.js</button>
+        <button class="btn ghost" id="reset_btn">↺ 重置为当前配置</button>
+      </div>
+    </div>
+
+    <!-- ============ 预览 ============ -->
+    <div class="preview-wrap">
+      <div class="pv-card" id="preview">
+        <div class="pv-avatar" id="pv_avatar">YN</div>
+        <div class="pv-name" id="pv_name">Your Name</div>
+        <div class="pv-title" id="pv_title">Your Title</div>
+        <div class="pv-bio" id="pv_bio"></div>
+        <div class="pv-socials" id="pv_socials"></div>
+      </div>
+      <p class="hint" style="margin-top:10px;">↑ 实时预览。改完表单这里会立刻更新。</p>
+    </div>
+  </div>
+
+  <!-- ============ 代码弹层 ============ -->
+  <div class="code-modal" id="codeModal">
+    <div class="code-box">
+      <h3>✅ 配置已生成</h3>
+      <p style="font-size:13px;color:#555;margin-bottom:10px;">
+        下载 <b>config.js</b> 并替换到你仓库里的同名文件，提交后刷新页面即可生效。
+      </p>
+      <pre id="codeOut"></pre>
+      <div class="btn-row">
+        <button class="btn" id="download_btn">⬇️ 下载 config.js</button>
+        <button class="btn ghost" id="copy_btn">📋 复制代码</button>
+        <button class="btn ghost" id="close_btn">关闭</button>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+<script>
+/* ---------- 工具 ---------- */
+const $ = id => document.getElementById(id);
+const SOCIAL_ICONS = {
+  linkedin:"fa-brands fa-linkedin-in", wechat:"fa-brands fa-weixin", instagram:"fa-brands fa-instagram",
+  facebook:"fa-brands fa-facebook-f", twitter:"fa-brands fa-x-twitter", github:"fa-brands fa-github",
+  youtube:"fa-brands fa-youtube", mail:"fa-solid fa-envelope", phone:"fa-solid fa-phone", website:"fa-solid fa-globe"
+};
+const PLATFORMS = ["linkedin","wechat","instagram","facebook","twitter","github","youtube","mail","phone","website"];
+
+let cfg = (window.CARD_CONFIG && typeof window.CARD_CONFIG==="object") ? JSON.parse(JSON.stringify(window.CARD_CONFIG))
+  : { name:"Your Name", title:"Your Title", bio:"Line one | Line two", avatar:{type:"text",imageUrl:"",text:"YN"},
+      theme:{gradientStart:"#0d0d0d",gradientEnd:"#2a2300",accent:"#FFB800"},
+      contact:{firstName:"",lastName:"",organization:"",title:"",phone:"",email:"",website:"",address:{}},
+      socials:[{platform:"linkedin",url:"#",label:"LinkedIn"},{platform:"wechat",wechatId:"",qrImage:"",label:"WeChat"}],
+      footer:{showPhone:false,showEmail:true,shareText:"Share this card"} };
+
+function showToast(m){ const t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2000); }
+function hex(c){ return (c&&c[0]==="#")?c:"#000000"; }
+
+/* ---------- 载入表单 ---------- */
+function loadForm(){
+  $("f_name").value = cfg.name||"";
+  $("f_title").value = cfg.title||"";
+  $("f_bio").value = (cfg.bio||"").split("|").map(s=>s.trim()).filter(Boolean).join("\n");
+  $("f_avatar_type").value = cfg.avatar?.type||"text";
+  $("f_avatar_text").value = cfg.avatar?.text||"";
+  $("f_avatar_url").value = cfg.avatar?.imageUrl||"";
+  $("f_grad1").value = hex(cfg.theme?.gradientStart);
+  $("f_grad2").value = hex(cfg.theme?.gradientEnd);
+  $("f_accent").value = hex(cfg.theme?.accent);
+  const c=cfg.contact||{};
+  $("f_c_first").value=c.firstName||""; $("f_c_last").value=c.lastName||"";
+  $("f_c_org").value=c.organization||""; $("f_c_title").value=c.title||"";
+  $("f_c_phone").value=c.phone||""; $("f_c_email").value=c.email||""; $("f_c_web").value=c.website||"";
+  $("f_show_phone").checked=!!cfg.footer?.showPhone;
+  $("f_show_email").checked=!!cfg.footer?.showEmail;
+  $("f_share_text").value=cfg.footer?.shareText||"";
+  renderSocials();
+  updatePreview();
+}
+
+/* ---------- 社交按钮动态列表 ---------- */
+function renderSocials(){
+  const box=$("socials_list"); box.innerHTML="";
+  (cfg.socials||[]).forEach((s,idx)=>{
+    const row=document.createElement("div"); row.className="social-row";
+    const isWechat = s.platform==="wechat";
+    row.innerHTML=`
+      <div class="top">
+        <select data-i="${idx}" class="s-platform">
+          ${PLATFORMS.map(p=>`<option value="${p}" ${p===s.platform?"selected":""}>${p}</option>`).join("")}
+        </select>
+        <input type="text" class="s-label" data-i="${idx}" value="${s.label||""}" placeholder="显示名" />
+        <button class="btn ghost sm s-del" data-i="${idx}">✕</button>
+      </div>
+      ${isWechat ? `
+        <input type="text" class="s-wechatid" data-i="${idx}" value="${s.wechatId||""}" placeholder="微信号 wechatId" style="margin-top:8px;" />
+        <input type="text" class="s-qr" data-i="${idx}" value="${s.qrImage||""}" placeholder="二维码图片地址 qrImage" style="margin-top:8px;" />
+      ` : `
+        <input type="url" class="s-url" data-i="${idx}" value="${s.url||""}" placeholder="链接 URL" style="margin-top:8px;" />
+      `}
+    `;
+    box.appendChild(row);
+  });
+  // 事件
+  box.querySelectorAll(".s-platform").forEach(el=>el.onchange=e=>{
+    cfg.socials[+e.target.dataset.i].platform=e.target.value; renderSocials(); updatePreview();
+  });
+  box.querySelectorAll(".s-label").forEach(el=>el.oninput=e=>cfg.socials[+e.target.dataset.i].label=e.target.value);
+  box.querySelectorAll(".s-url").forEach(el=>el.oninput=e=>cfg.socials[+e.target.dataset.i].url=e.target.value);
+  box.querySelectorAll(".s-wechatid").forEach(el=>el.oninput=e=>cfg.socials[+e.target.dataset.i].wechatId=e.target.value);
+  box.querySelectorAll(".s-qr").forEach(el=>el.oninput=e=>cfg.socials[+e.target.dataset.i].qrImage=e.target.value);
+  box.querySelectorAll(".s-del").forEach(el=>el.onclick=e=>{ cfg.socials.splice(+e.target.dataset.i,1); renderSocials(); updatePreview(); });
+}
+$("add_social").onclick=()=>{ cfg.socials.push({platform:"linkedin",url:"#",label:"LinkedIn"}); renderSocials(); updatePreview(); };
+
+/* ---------- 从表单读回 cfg ---------- */
+function readForm(){
+  cfg.name=$("f_name").value;
+  cfg.title=$("f_title").value;
+  cfg.bio=$("f_bio").value.split("\n").map(s=>s.trim()).filter(Boolean).join(" | ");
+  cfg.avatar={ type:$("f_avatar_type").value, imageUrl:$("f_avatar_url").value, text:$("f_avatar_text").value };
+  cfg.theme={ gradientStart:$("f_grad1").value, gradientEnd:$("f_grad2").value, accent:$("f_accent").value };
+  cfg.contact={
+    firstName:$("f_c_first").value, lastName:$("f_c_last").value, organization:$("f_c_org").value,
+    title:$("f_c_title").value, phone:$("f_c_phone").value, email:$("f_c_email").value,
+    website:$("f_c_web").value, address:{}
+  };
+  cfg.footer={ showPhone:$("f_show_phone").checked, showEmail:$("f_show_email").checked, shareText:$("f_share_text").value };
+}
+
+/* ---------- 实时预览 ---------- */
+function updatePreview(){
+  readForm();
+  const g=cfg.theme;
+  const pv=$("preview");
+  pv.style.background=`linear-gradient(135deg, ${g.gradientStart}, ${g.gradientEnd})`;
+  pv.style.borderColor=g.accent+"55";
+  const av=$("pv_avatar"); av.style.background=g.accent; av.style.color=g.gradientStart;
+  if(cfg.avatar.type==="image" && cfg.avatar.imageUrl){
+    av.innerHTML=`<img src="${cfg.avatar.imageUrl}" alt="">`;
+  } else { av.textContent=cfg.avatar.text||(cfg.name||"Y").charAt(0); }
+  $("pv_name").textContent=cfg.name||"Your Name";
+  $("pv_title").textContent=cfg.title||"";
+  const bioEl=$("pv_bio"); bioEl.innerHTML="";
+  (cfg.bio||"").split("|").map(s=>s.trim()).filter(Boolean).forEach(seg=>{
+    const d=document.createElement("div"); d.textContent=seg; bioEl.appendChild(d);
+  });
+  const sc=$("pv_socials"); sc.innerHTML="";
+  (cfg.socials||[]).forEach(s=>{
+    const i=document.createElement("i"); i.className=SOCIAL_ICONS[s.platform]||"fa-solid fa-link";
+    i.style.color=g.accent; sc.appendChild(i);
+  });
+}
+
+/* 表单任意输入 -> 预览 */
+document.querySelectorAll("input,textarea,select").forEach(el=>{
+  if(el.closest(".social-row")) return;
+  el.addEventListener("input",updatePreview); el.addEventListener("change",updatePreview);
+});
+
+/* ---------- 生成 config.js 文本 ---------- */
+function buildConfigJS(){
+  // 生成干净、带注释的 window.CARD_CONFIG = {...};
+  const socials = cfg.socials.map(s=>{
+    if(s.platform==="wechat") return `    { platform: "wechat",    wechatId: ${j(s.wechatId)}, qrImage: ${j(s.qrImage)}, label: ${j(s.label)} }`;
+    return `    { platform: "${s.platform}", url: ${j(s.url)}, label: ${j(s.label)} }`;
+  }).join(",\n");
+  return `/* 本文件由 editor.html 生成 — 直接替换原 config.js 即可 */
+window.CARD_CONFIG = {
+  name: ${j(cfg.name)},
+  title: ${j(cfg.title)},
+  bio: ${j(cfg.bio)},
+
+  avatar: {
+    type: ${j(cfg.avatar.type)},
+    imageUrl: ${j(cfg.avatar.imageUrl)},
+    text: ${j(cfg.avatar.text)}
+  },
+
+  theme: {
+    gradientStart: ${j(cfg.theme.gradientStart)},
+    gradientEnd:   ${j(cfg.theme.gradientEnd)},
+    accent:        ${j(cfg.theme.accent)}
+  },
+
+  contact: {
+    firstName:   ${j(cfg.contact.firstName)},
+    lastName:    ${j(cfg.contact.lastName)},
+    organization:${j(cfg.contact.organization)},
+    title:       ${j(cfg.contact.title)},
+    phone:       ${j(cfg.contact.phone)},
+    email:       ${j(cfg.contact.email)},
+    website:     ${j(cfg.contact.website)},
+    address: {}
+  },
+
+  socials: [
+${socials}
+  ],
+
+  footer: {
+    showPhone: ${cfg.footer.showPhone},
+    showEmail: ${cfg.footer.showEmail},
+    shareText: ${j(cfg.footer.shareText)}
+  }
+};
+`;
+}
+function j(v){ return JSON.stringify(v===undefined?"":v); }
+
+/* ---------- 弹层 / 下载 / 复制 ---------- */
+$("gen_btn").onclick=()=>{ readForm(); const code=buildConfigJS(); $("codeOut").textContent=code; $("codeModal").classList.add("show"); window._code=code; };
+$("close_btn").onclick=()=>$("codeModal").classList.remove("show");
+$("codeModal").addEventListener("click",e=>{ if(e.target===$("codeModal")) $("codeModal").classList.remove("show"); });
+$("download_btn").onclick=()=>{
+  const blob=new Blob([window._code],{type:"application/javascript"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="config.js"; a.click();
+  showToast("已下载 config.js，去替换仓库里的文件吧");
+};
+$("copy_btn").onclick=async()=>{
+  try{ await navigator.clipboard.writeText(window._code); showToast("代码已复制"); }
+  catch(e){ showToast("复制失败，请手动选择代码"); }
+};
+$("reset_btn").onclick=()=>{ loadForm(); showToast("已重置为当前配置"); };
+
+/* 初始化 */
+loadForm();
+</script>
+</body>
+</html>

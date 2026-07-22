@@ -261,70 +261,32 @@
   <!-- ===================== Toast ===================== -->
   <div class="toast" id="toast"></div>
 
+  <script src="config.js"></script>
   <script>
   /* ======================================================================
-     ⛟ CARD_CONFIG  ·  唯一需要修改的配置对象 (PROTOTYPE v1)
+     ⛟ CARD_CONFIG 已抽离到独立文件 config.js (小白只需改那一个文件!)
      ----------------------------------------------------------------------
-     👉 你只需要修改下面这个对象里的文字和链接即可。
-        - 不要改动本对象之外的 HTML / CSS 代码。
-        - 中文注释说明每一项含义,英文注释便于国际友人复刻。
-        - 标注 [待补] 的字段会在 v2 / v3 迭代中完善。
+     👉 修改内容请编辑仓库里的 config.js, 不要改本文件 index.html。
+        index.html 会自动读取 config.js 里的 window.CARD_CONFIG。
+        若 config.js 缺失, 下方提供"最小默认配置", 页面仍可渲染不报错。
+        💡 不会写代码? 打开仓库里的 editor.html 可视化编辑器, 填表即可生成。
      ====================================================================== */
-  const CARD_CONFIG = {
-
-    // ===== 基本信息 / Basic Info =====
-    name: "Hairuo Liu",                                       // 显示姓名
-    title: "Ex-Amazon in Ads · AWS Certified Solutions Architect",  // 一句话头衔 (已涵盖下方简介前两项,避免重复)
-
-    // 简介:用 "|" 分隔,每个片段在手机上单独成行,易读不冗长。
-    // 注意:前两项(Ex-Amazon / AWS Certified)已在 title 中,这里不再重复。
-    bio: "Experienced in Amazon AWS and Big Data | Software & Hardware Product Maker | 3D Parametric Design & E-commerce",
-
-    // ===== 头像 / Avatar =====
-    // type: "image" 使用图片链接; type: "text" 使用首字母文字 Logo
-    avatar: {
-      type: "image",           // "image" or "text"
-      imageUrl: "./avatar.png",// 本地头像图片 (已放入仓库,GitHub Pages 可直接访问)
-      text: "HL"               // 文字 Logo 备用(当 type="text" 时显示)
-    },
-
-    // ===== 主题配色 / Theme (黄 + 黑,专业风) =====
-    theme: {
-      gradientStart: "#0d0d0d",  // 背景渐变起始色 (近黑)
-      gradientEnd:   "#2a2300",  // 背景渐变结束色 (深暖黑)
-      accent:        "#FFB800"   // 主按钮 / 强调色 (Amazon 黄)
-    },
-
-    // ===== 通讯录信息 / Contact (用于生成 .vcf 名片) =====
-    contact: {
-      firstName:   "Hairuo",
-      lastName:    "Liu",
-      organization:"",                 // [待补] 公司 / 组织
-      title:       "",                 // [待补] 职位 (写入 vCard)
-      phone:       "6148868181",       // 电话 (如需国际格式可改为 +16148868181)
-      email:       "",                 // [待补] 邮箱 (留空则不显示)
-      website:     "https://www.linkedin.com/in/hairuo-liu/",
-      address: {}                     // [待补] 地址 (留空对象即可)
-    },
-
-    // ===== 社交链接 / Social Links =====
-    // platform 可选值 (图标+品牌色已内置):
-    //   linkedin | wechat | instagram | facebook | twitter |
-    //   github | youtube | mail | phone | website
+  const CARD_CONFIG = window.CARD_CONFIG || {
+    name: "Your Name",
+    title: "Your Title",
+    bio: "Line one | Line two | Line three",
+    avatar: { type: "text", imageUrl: "", text: "YN" },
+    theme: { gradientStart: "#0d0d0d", gradientEnd: "#2a2300", accent: "#FFB800" },
+    contact: { firstName: "Your", lastName: "Name", organization: "", title: "", phone: "", email: "", website: "", address: {} },
     socials: [
-      { platform: "linkedin",  url: "https://www.linkedin.com/in/hairuo-liu/",          label: "LinkedIn"  },
-      { platform: "wechat",    wechatId: "", qrImage: "",                              label: "WeChat"   }, // [待补] 微信链接/二维码
-      { platform: "instagram", url: "https://www.instagram.com/liuhai.er/",             label: "Instagram" },
-      { platform: "facebook",  url: "https://www.facebook.com/94LiuHai",                label: "Facebook"  }
+      { platform: "linkedin",  url: "#", label: "LinkedIn" },
+      { platform: "wechat",    wechatId: "", qrImage: "", label: "WeChat" },
+      { platform: "instagram", url: "#", label: "Instagram" },
+      { platform: "facebook",  url: "#", label: "Facebook" }
     ],
-
-    // ===== 底部联系方式 / Footer =====
-    footer: {
-      showPhone: false,  // 不在页面公开显示号码(仅保留在“保存到通讯录”的 vCard 中)
-      showEmail: true,   // 是否在底部显示邮箱行 (email 为空时不显示)
-      shareText: "分享此名片 · Share this card"  // 分享按钮文案
-    }
+    footer: { showPhone: false, showEmail: true, shareText: "Share this card" }
   };
+
 
   /* ======================================================================
      ⛟ 以下为逻辑代码,一般无需修改 / Logic below — usually no need to edit.
