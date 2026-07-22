@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  Personal Digital Card / NFC Landing Page  ·  个人电子名片 / NFC 落地页
+  ----------------------------------------------------------------------------
+  ✦ Single-file template (HTML + inline CSS + inline JS). No build step.
+  ✦ Deploy: just upload this file to GitHub Pages (or any static host).
+  ✦ Customize: edit ONLY the `CARD_CONFIG` object at the top of <script>.
+  ✦ 模板化: 只修改下方 <script> 中的 CARD_CONFIG 即可,无需改动其它代码。
+  ============================================================================
+-->
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+
+  <!-- Mobile-first viewport. viewport-fit=cover 适配刘海屏安全区 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+  <!--
+    ⚠️ OG / 社交分享标签 (Static metadata for link previews)
+    说明: 搜索引擎与微信/Telegram 等爬虫不会执行 JS,因此这些标签需要手动填写。
+    部署前请替换下面 title / description / image 为你的真实信息。
+    (脚本运行后也会尝试用 CARD_CONFIG 动态更新,但静态值才是爬虫读取的来源。)
+  -->
+  <title>Hairuo Liu · 电子名片</title>
+  <meta name="description" content="扫码查看 Hairuo Liu 的电子名片 · Scan to view my digital card" />
+  <meta property="og:title" content="Hairuo Liu · 电子名片" />
+  <meta property="og:description" content="扫码查看 Hairuo Liu 的电子名片" />
+  <meta property="og:type" content="profile" />
+  <meta property="og:image" content="https://example.com/cover.png" />
+
+  <!-- FontAwesome CDN (图标库,含品牌图标) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    /* ======================================================================
+       THEME TOKENS  ·  主题变量
+       这些变量会被 JS 根据 CARD_CONFIG.theme 动态覆盖,
+       你也可以直接在这里硬编码修改。
+       ====================================================================== */
+    :root {
+      --gradient-start: #0d0d0d;   /* 背景渐变起始色 (overridden by JS) */
+      --gradient-end:   #2a2300;   /* 背景渐变结束色 (overridden by JS) */
+      --accent:         #FFB800;   /* 主按钮背景色 (overridden by JS)    */
+      --glass-bg:       rgba(255, 255, 255, 0.10);
+      --glass-border:   rgba(255, 255, 255, 0.22);
+      --text:           rgba(255, 255, 255, 0.96);
+      --text-dim:       rgba(255, 255, 255, 0.70);
+      --radius:         26px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; }
+
+    /* ---- Body: 渐变背景 + 居中布局 ---- */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+      background-attachment: fixed;
+      color: var(--text);
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 18px;
+      /* 适配 iOS 安全区 (刘海/底部 home 指示条) */
+      padding-top: calc(24px + env(safe-area-inset-top));
+      padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    }
+
+    /* ---- Glassmorphic 主卡片 ---- */
+    .card {
+      width: 100%;
+      max-width: 430px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(22px) saturate(160%);
+      -webkit-backdrop-filter: blur(22px) saturate(160%);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      padding: 34px 26px 28px;
+      text-align: center;
+      /* 加载淡入动画 */
+      opacity: 0;
+      transform: translateY(14px);
+      animation: fadeUp 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) 0.1s forwards;
+    }
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+    /* ---- 头像 / Avatar ---- */
+    .avatar {
+      width: 104px; height: 104px;
+      border-radius: 50%;
+      margin: 0 auto 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 38px; font-weight: 700; letter-spacing: 1px;
+      color: var(--gradient-start);
+      background: var(--accent);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 0 0 6px rgba(255, 184, 0, 0.22);
+      overflow: hidden;
+    }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* ---- 文字信息 ---- */
+    .name  { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    .title { font-size: 14px; color: var(--text-dim); margin-bottom: 12px; font-weight: 500; }
+    .bio   { font-size: 14px; line-height: 1.6; color: var(--text-dim); margin-bottom: 22px; }
+
+    /* ---- 主按钮 (保存通讯录) ---- */
+    .btn-primary {
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+      width: 100%; padding: 15px; border: none; border-radius: 16px;
+      background: var(--accent); color: #1a1a1a; font-size: 15px; font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.25s ease, filter 0.2s ease;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    }
+    .btn-primary:hover  { filter: brightness(0.94); box-shadow: 0 10px 26px rgba(0, 0, 0, 0.3); }
+    .btn-primary:active { transform: scale(0.96); }   /* 点击缩放反馈 */
+
+    /* ---- 社交按钮组 ---- */
+    .socials {
+      display: flex; justify-content: center; gap: 18px;
+      margin: 24px 0 6px; flex-wrap: wrap;
+    }
+    .social-btn {
+      width: 54px; height: 54px; border-radius: 50%;
+      border: 1px solid var(--glass-border);
+      background: rgba(255, 255, 255, 0.10);
+      color: #fff; font-size: 21px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+    }
+    /* 悬停/点击时显示品牌色 */
+    .social-btn:hover  { background: var(--brand); color: #fff; box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3); }
+    .social-btn:active { transform: scale(0.9); }
+
+    /* ---- 底部联系方式 ---- */
+    .footer {
+      margin-top: 22px; border-top: 1px solid rgba(255, 255, 255, 0.18);
+      padding-top: 16px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .footer-row {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      font-size: 13.5px; color: var(--text-dim); text-decoration: none;
+    }
+    .footer-row i { font-size: 14px; }
+    .footer-row:active { color: #fff; }
+
+    .share-btn {
+      margin-top: 4px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      align-self: center;
+      padding: 10px 18px; border-radius: 30px;
+      border: 1px solid var(--glass-border);
+      background: rgba(255, 255, 255, 0.10); color: var(--text);
+      font-size: 13.5px; font-weight: 600; cursor: pointer;
+      transition: transform 0.15s ease, background 0.25s ease;
+    }
+    .share-btn:hover  { background: rgba(255, 255, 255, 0.20); }
+    .share-btn:active { transform: scale(0.95); }
+
+    /* ---- 微信弹窗 / WeChat Modal ---- */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px; opacity: 0; visibility: hidden;
+      transition: opacity 0.25s ease, visibility 0.25s ease; z-index: 50;
+    }
+    .modal-overlay.show { opacity: 1; visibility: visible; }
+    .modal {
+      background: #fff; color: #222; border-radius: 22px;
+      padding: 26px 24px; width: 100%; max-width: 320px; text-align: center;
+      transform: scale(0.92); transition: transform 0.25s ease;
+      position: relative;
+    }
+    .modal-overlay.show .modal { transform: scale(1); }
+    .modal-close {
+      position: absolute; top: 12px; right: 14px;
+      background: none; border: none; font-size: 20px; color: #999; cursor: pointer;
+    }
+    .modal-icon {
+      width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 10px;
+      background: #07C160; color: #fff;
+      display: flex; align-items: center; justify-content: center; font-size: 26px;
+    }
+    .modal h3 { font-size: 17px; margin-bottom: 14px; }
+    .modal-qr { width: 180px; height: 180px; object-fit: contain; margin: 0 auto 12px; border-radius: 12px; }
+    .modal-qr-placeholder {
+      width: 180px; height: 180px; margin: 0 auto 12px; border-radius: 12px;
+      background: #f2f2f2; color: #999; font-size: 13px;
+      display: flex; align-items: center; justify-content: center; padding: 12px;
+    }
+    .modal-wechat-id { font-size: 14px; color: #555; margin-bottom: 14px; word-break: break-all; }
+    .modal-btn {
+      width: 100%; padding: 12px; border: none; border-radius: 14px;
+      background: #07C160; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: transform 0.15s ease, filter 0.2s ease;
+    }
+    .modal-btn:hover  { filter: brightness(0.95); }
+    .modal-btn:active { transform: scale(0.96); }
+
+    /* ---- Toast 轻提示 ---- */
+    .toast {
+      position: fixed; left: 50%;
+      bottom: calc(28px + env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(0, 0, 0, 0.82); color: #fff;
+      padding: 11px 20px; border-radius: 30px; font-size: 13.5px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      z-index: 60; max-width: 84%; text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+
+<body>
+  <!-- ===================== 主卡片 / Main Card ===================== -->
+  <main class="card" id="card">
+    <!-- 头像 (由 JS 根据 CARD_CONFIG.avatar 渲染) -->
+    <div class="avatar" id="avatar"></div>
+
+    <!-- 姓名 / 头衔 / 简介 -->
+    <h1 class="name"  id="name"></h1>
+    <p  class="title" id="title"></p>
+    <p  class="bio"   id="bio"></p>
+
+    <!-- 一键保存通讯录 -->
+    <button class="btn-primary" id="saveContact">
+      <i class="fa-solid fa-address-card"></i>
+      <span>保存到通讯录 · Save Contact</span>
+    </button>
+
+    <!-- 社交按钮 (由 JS 根据 CARD_CONFIG.socials 渲染) -->
+    <nav class="socials" id="socials" aria-label="Social links"></nav>
+
+    <!-- 底部联系方式 + 分享 -->
+    <footer class="footer" id="footer"></footer>
+  </main>
+
+  <!-- ===================== 微信弹窗 / WeChat Modal ===================== -->
+  <div class="modal-overlay" id="wechatModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true">
+      <button class="modal-close" id="modalClose" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-icon"><i class="fa-brands fa-weixin"></i></div>
+      <h3>微信 WeChat</h3>
+      <div id="qrContainer"></div>
+      <p class="modal-wechat-id" id="wechatIdText"></p>
+      <button class="modal-btn" id="copyWechatBtn">复制微信号 · Copy ID</button>
+    </div>
+  </div>
+
+  <!-- ===================== Toast ===================== -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+  /* ======================================================================
+     ⛟ CARD_CONFIG  ·  唯一需要修改的配置对象 (PROTOTYPE v1)
+     ----------------------------------------------------------------------
+     👉 你只需要修改下面这个对象里的文字和链接即可。
+        - 不要改动本对象之外的 HTML / CSS 代码。
+        - 中文注释说明每一项含义,英文注释便于国际友人复刻。
+        - 标注 [待补] 的字段会在 v2 / v3 迭代中完善。
+     ====================================================================== */
+  const CARD_CONFIG = {
+
+    // ===== 基本信息 / Basic Info =====
+    name: "Hairuo Liu",                                       // 显示姓名
+    title: "Product · Operations · 前 Amazon",                // [待补] 头衔 / 一句话职位
+    bio: "用专业与温度连接人与产品 · 扫码认识我",            // [待补] 个人简介 (Bio)
+
+    // ===== 头像 / Avatar =====
+    // type: "image" 使用图片链接; type: "text" 使用首字母文字 Logo
+    // [待补] 把 LinkedIn 头像链接贴到 imageUrl,并把 type 改为 "image"
+    avatar: {
+      type: "text",            // "image" or "text"
+      imageUrl: "",            // LinkedIn 头像直链 (待补)
+      text: "HL"               // 当前占位文字 Logo
+    },
+
+    // ===== 主题配色 / Theme (黄 + 黑,专业风) =====
+    theme: {
+      gradientStart: "#0d0d0d",  // 背景渐变起始色 (近黑)
+      gradientEnd:   "#2a2300",  // 背景渐变结束色 (深暖黑)
+      accent:        "#FFB800"   // 主按钮 / 强调色 (Amazon 黄)
+    },
+
+    // ===== 通讯录信息 / Contact (用于生成 .vcf 名片) =====
+    contact: {
+      firstName:   "Hairuo",
+      lastName:    "Liu",
+      organization:"",                 // [待补] 公司 / 组织
+      title:       "",                 // [待补] 职位 (写入 vCard)
+      phone:       "6148868181",       // 电话 (如需国际格式可改为 +16148868181)
+      email:       "",                 // [待补] 邮箱 (留空则不显示)
+      website:     "https://www.linkedin.com/in/hairuo-liu/",
+      address: {}                     // [待补] 地址 (留空对象即可)
+    },
+
+    // ===== 社交链接 / Social Links =====
+    // platform 可选值 (图标+品牌色已内置):
+    //   linkedin | wechat | instagram | facebook | twitter |
+    //   github | youtube | mail | phone | website
+    socials: [
+      { platform: "linkedin",  url: "https://www.linkedin.com/in/hairuo-liu/",          label: "LinkedIn"  },
+      { platform: "wechat",    wechatId: "", qrImage: "",                              label: "WeChat"   }, // [待补] 微信链接/二维码
+      { platform: "instagram", url: "https://www.instagram.com/liuhai.er/",             label: "Instagram" },
+      { platform: "facebook",  url: "https://www.facebook.com/94LiuHai",                label: "Facebook"  }
+    ],
+
+    // ===== 底部联系方式 / Footer =====
+    footer: {
+      showPhone: true,   // 是否在底部显示电话行
+      showEmail: true,   // 是否在底部显示邮箱行 (email 为空时不显示)
+      shareText: "分享此名片 · Share this card"  // 分享按钮文案
+    }
+  };
+
+  /* ======================================================================
+     ⛟ 以下为逻辑代码,一般无需修改 / Logic below — usually no need to edit.
+     ====================================================================== */
+
+  // 社交平台元信息: 图标 (FontAwesome class) + 品牌色
+  // Social platform metadata: icon class + brand color
+  const SOCIAL_META = {
+    linkedin:  { icon: "fa-brands fa-linkedin-in", color: "#0A66C2" },
+    wechat:    { icon: "fa-brands fa-weixin",       color: "#07C160" },
+    instagram: { icon: "fa-brands fa-instagram",    color: "#E4405F" },
+    facebook:  { icon: "fa-brands fa-facebook-f",   color: "#1877F2" },
+    twitter:   { icon: "fa-brands fa-x-twitter",    color: "#111111" },
+    github:    { icon: "fa-brands fa-github",       color: "#181717" },
+    youtube:   { icon: "fa-brands fa-youtube",      color: "#FF0000" },
+    mail:      { icon: "fa-solid fa-envelope",      color: "#EA4335" },
+    phone:     { icon: "fa-solid fa-phone",         color: "#34A853" },
+    website:   { icon: "fa-solid fa-globe",         color: "#5F6368" }
+  };
+
+  // ---------- 工具: Toast 提示 ----------
+  let toastTimer = null;
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+  }
+
+  // ---------- 工具: 复制到剪贴板 ----------
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // 兼容非 HTTPS 环境 (如某些本地预览)
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // ---------- 应用主题 / Apply theme ----------
+  function applyTheme() {
+    const r = document.documentElement.style;
+    r.setProperty("--gradient-start", CARD_CONFIG.theme.gradientStart);
+    r.setProperty("--gradient-end",   CARD_CONFIG.theme.gradientEnd);
+    r.setProperty("--accent",         CARD_CONFIG.theme.accent);
+    // 同步更新页面标题与分享元数据 (best-effort)
+    document.title = CARD_CONFIG.name + " · 电子名片";
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    const ogDesc  = document.querySelector('meta[property="og:description"]');
+    if (ogTitle) ogTitle.setAttribute("content", CARD_CONFIG.name);
+    if (ogDesc)  ogDesc.setAttribute("content", CARD_CONFIG.bio);
+  }
+
+  // ---------- 渲染个人信息 / Render profile ----------
+  function renderProfile() {
+    document.getElementById("name").textContent  = CARD_CONFIG.name;
+    document.getElementById("title").textContent = CARD_CONFIG.title;
+    document.getElementById("bio").textContent   = CARD_CONFIG.bio;
+
+    const avatarEl = document.getElementById("avatar");
+    if (CARD_CONFIG.avatar.type === "image" && CARD_CONFIG.avatar.imageUrl) {
+      const img = document.createElement("img");
+      img.src = CARD_CONFIG.avatar.imageUrl;
+      img.alt = CARD_CONFIG.name;
+      avatarEl.appendChild(img);
+    } else {
+      avatarEl.textContent = CARD_CONFIG.avatar.text || CARD_CONFIG.name.charAt(0);
+    }
+  }
+
+  // ---------- 渲染社交按钮 / Render social buttons ----------
+  function renderSocials() {
+    const container = document.getElementById("socials");
+    CARD_CONFIG.socials.forEach(item => {
+      const meta = SOCIAL_META[item.platform] || { icon: "fa-solid fa-link", color: "#888" };
+      const btn = document.createElement("button");
+      btn.className = "social-btn";
+      btn.style.setProperty("--brand", meta.color);
+      btn.setAttribute("aria-label", item.label || item.platform);
+      btn.innerHTML = `<i class="${meta.icon}"></i>`;
+
+      btn.addEventListener("click", () => {
+        if (item.platform === "wechat") {
+          openWechatModal(item);
+        } else if (item.url) {
+          window.open(item.url, "_blank", "noopener");
+        }
+      });
+      container.appendChild(btn);
+    });
+  }
+
+  // ---------- 渲染底部 / Render footer ----------
+  function renderFooter() {
+    const footer = document.getElementById("footer");
+    const c = CARD_CONFIG.contact;
+    const f = CARD_CONFIG.footer;
+
+    if (f.showPhone && c.phone) {
+      const row = document.createElement("a");
+      row.className = "footer-row";
+      row.href = "tel:" + c.phone;
+      row.innerHTML = `<i class="fa-solid fa-phone"></i><span>${c.phone}</span>`;
+      footer.appendChild(row);
+    }
+    if (f.showEmail && c.email) {
+      const row = document.createElement("a");
+      row.className = "footer-row";
+      row.href = "mailto:" + c.email;
+      row.innerHTML = `<i class="fa-solid fa-envelope"></i><span>${c.email}</span>`;
+      footer.appendChild(row);
+    }
+
+    const shareBtn = document.createElement("button");
+    shareBtn.className = "share-btn";
+    shareBtn.innerHTML = `<i class="fa-solid fa-share-nodes"></i><span>${f.shareText}</span>`;
+    shareBtn.addEventListener("click", shareCard);
+    footer.appendChild(shareBtn);
+  }
+
+  // ---------- 微信弹窗 / WeChat modal ----------
+  function openWechatModal(item) {
+    const overlay = document.getElementById("wechatModal");
+    const qrContainer = document.getElementById("qrContainer");
+    const idText = document.getElementById("wechatIdText");
+    const copyBtn = document.getElementById("copyWechatBtn");
+
+    // 二维码
+    qrContainer.innerHTML = "";
+    if (item.qrImage) {
+      const img = document.createElement("img");
+      img.src = item.qrImage;
+      img.alt = "WeChat QR";
+      img.className = "modal-qr";
+      qrContainer.appendChild(img);
+    } else {
+      const ph = document.createElement("div");
+      ph.className = "modal-qr-placeholder";
+      ph.textContent = "在 CARD_CONFIG 中填写 qrImage 即可显示二维码";
+      qrContainer.appendChild(ph);
+    }
+
+    // 微信号
+    if (item.wechatId) {
+      idText.textContent = "微信号 / WeChat ID: " + item.wechatId;
+      copyBtn.style.display = "";
+      copyBtn.onclick = async () => {
+        const ok = await copyText(item.wechatId);
+        showToast(ok ? "已复制微信号 · ID copied" : "复制失败,请手动复制");
+      };
+    } else {
+      idText.textContent = "";
+      copyBtn.style.display = "none";
+    }
+
+    overlay.classList.add("show");
+    overlay.setAttribute("aria-hidden", "false");
+  }
+
+  function closeWechatModal() {
+    const overlay = document.getElementById("wechatModal");
+    overlay.classList.remove("show");
+    overlay.setAttribute("aria-hidden", "true");
+  }
+
+  // ---------- 生成并下载 vCard (.vcf) ----------
+  function generateVCF() {
+    const c = CARD_CONFIG.contact;
+    const a = c.address || {};
+    const lines = [
+      "BEGIN:VCARD",
+      "VERSION:3.0",
+      `N:${c.lastName};${c.firstName};;;`,
+      `FN:${CARD_CONFIG.name}`,
+      c.organization ? `ORG:${c.organization}` : "",
+      c.title        ? `TITLE:${c.title}`       : "",
+      c.phone        ? `TEL;TYPE=CELL,VOICE:${c.phone}` : "",
+      c.email        ? `EMAIL;TYPE=INTERNET,WORK:${c.email}` : "",
+      c.website      ? `URL:${c.website}` : "",
+      (a.street || a.city || a.region || a.zip || a.country)
+        ? `ADR;TYPE=WORK:;;${a.street||""};${a.city||""};${a.region||""};${a.zip||""};${a.country||""}`
+        : "",
+      "END:VCARD"
+    ].filter(Boolean);
+    return lines.join("\r\n");
+  }
+
+  function downloadVCF() {
+    const vcf = generateVCF();
+    const blob = new Blob([vcf], { type: "text/vcard;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = (CARD_CONFIG.contact.lastName + CARD_CONFIG.contact.firstName || "contact") + ".vcf";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("名片已保存 · Contact saved");
+  }
+
+  // ---------- 分享 / Share ----------
+  async function shareCard() {
+    const shareData = {
+      title: CARD_CONFIG.name,
+      text: CARD_CONFIG.bio,
+      url: location.href
+    };
+    // 优先使用系统原生分享 (移动端体验最佳)
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (e) { /* 用户取消分享则回退到复制 */ }
+    }
+    // 回退: 复制链接到剪贴板
+    const ok = await copyText(location.href);
+    showToast(ok ? "链接已复制 · Link copied" : "复制失败,请手动复制地址");
+  }
+
+  // ---------- 初始化 / Init ----------
+  function init() {
+    applyTheme();
+    renderProfile();
+    renderSocials();
+    renderFooter();
+
+    document.getElementById("saveContact").addEventListener("click", downloadVCF);
+
+    // 关闭弹窗: 点击遮罩或关闭按钮
+    document.getElementById("modalClose").addEventListener("click", closeWechatModal);
+    document.getElementById("wechatModal").addEventListener("click", (e) => {
+      if (e.target.id === "wechatModal") closeWechatModal();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeWechatModal();
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+  </script>
+</body>
+</html>
