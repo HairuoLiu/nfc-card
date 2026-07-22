@@ -23,9 +23,9 @@
     (脚本运行后也会尝试用 CARD_CONFIG 动态更新,但静态值才是爬虫读取的来源。)
   -->
   <title>Hairuo Liu · Digital Card</title>
-  <meta name="description" content="Ex-Amazon in Ads (6+ yrs) | AWS Certified Solutions Architect | Software & Hardware Product Maker" />
+  <meta name="description" content="Ex-Amazon in Ads · AWS Certified Solutions Architect · Software & Hardware Product Maker" />
   <meta property="og:title" content="Hairuo Liu · Digital Card" />
-  <meta property="og:description" content="Ex-Amazon in Ads (6+ yrs) | AWS Certified Solutions Architect | Software & Hardware Product Maker" />
+  <meta property="og:description" content="Ex-Amazon in Ads · AWS Certified Solutions Architect · Software & Hardware Product Maker" />
   <meta property="og:type" content="profile" />
   <meta property="og:image" content="https://hairuoliu.github.io/nfc-card/avatar.png" />
 
@@ -106,7 +106,9 @@
     /* ---- 文字信息 ---- */
     .name  { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
     .title { font-size: 14px; color: var(--text-dim); margin-bottom: 12px; font-weight: 500; }
-    .bio   { font-size: 14px; line-height: 1.6; color: var(--text-dim); margin-bottom: 22px; }
+    .bio   { font-size: 14px; line-height: 1.55; color: var(--text-dim); margin-bottom: 22px; }
+    .bio-line { display: block; }                 /* 每段简介独立成行 */
+    .bio-line + .bio-line { margin-top: 5px; }    /* 段间留白 */
 
     /* ---- 主按钮 (保存通讯录) ---- */
     .btn-primary {
@@ -272,8 +274,11 @@
 
     // ===== 基本信息 / Basic Info =====
     name: "Hairuo Liu",                                       // 显示姓名
-    title: "Ex-Amazon in Ads · AWS Solutions Architect",      // 一句话头衔
-    bio: "Ex-Amazon in Ads (6+ yrs) | AWS Certified Solutions Architect | Experienced in Amazon AWS and Big Data | Software & Hardware Product Maker (3D Parametric Design & E-commerce)",
+    title: "Ex-Amazon in Ads · AWS Certified Solutions Architect",  // 一句话头衔 (已涵盖下方简介前两项,避免重复)
+
+    // 简介:用 "|" 分隔,每个片段在手机上单独成行,易读不冗长。
+    // 注意:前两项(Ex-Amazon / AWS Certified)已在 title 中,这里不再重复。
+    bio: "Experienced in Amazon AWS and Big Data | Software & Hardware Product Maker | 3D Parametric Design & E-commerce",
 
     // ===== 头像 / Avatar =====
     // type: "image" 使用图片链接; type: "text" 使用首字母文字 Logo
@@ -383,14 +388,27 @@
     const ogTitle = document.querySelector('meta[property="og:title"]');
     const ogDesc  = document.querySelector('meta[property="og:description"]');
     if (ogTitle) ogTitle.setAttribute("content", CARD_CONFIG.name + " · Digital Card");
-    if (ogDesc)  ogDesc.setAttribute("content", CARD_CONFIG.bio);
+    if (ogDesc)  ogDesc.setAttribute("content", CARD_CONFIG.bio.split("|").map(s => s.trim()).join(" · "));
   }
 
   // ---------- 渲染个人信息 / Render profile ----------
   function renderProfile() {
     document.getElementById("name").textContent  = CARD_CONFIG.name;
     document.getElementById("title").textContent = CARD_CONFIG.title;
-    document.getElementById("bio").textContent   = CARD_CONFIG.bio;
+
+    // 简介:按 "|" 拆分成多行,每段独立成行 (移动端更易读)
+    const bioEl = document.getElementById("bio");
+    bioEl.innerHTML = "";
+    CARD_CONFIG.bio
+      .split("|")
+      .map(seg => seg.trim())
+      .filter(Boolean)
+      .forEach(seg => {
+        const line = document.createElement("span");
+        line.className = "bio-line";
+        line.textContent = seg;
+        bioEl.appendChild(line);
+      });
 
     const avatarEl = document.getElementById("avatar");
     if (CARD_CONFIG.avatar.type === "image" && CARD_CONFIG.avatar.imageUrl) {
