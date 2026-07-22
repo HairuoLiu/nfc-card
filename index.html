@@ -22,12 +22,12 @@
     部署前请替换下面 title / description / image 为你的真实信息。
     (脚本运行后也会尝试用 CARD_CONFIG 动态更新,但静态值才是爬虫读取的来源。)
   -->
-  <title>Hairuo Liu · 电子名片</title>
-  <meta name="description" content="扫码查看 Hairuo Liu 的电子名片 · Scan to view my digital card" />
-  <meta property="og:title" content="Hairuo Liu · 电子名片" />
-  <meta property="og:description" content="扫码查看 Hairuo Liu 的电子名片" />
+  <title>Hairuo Liu · Digital Card</title>
+  <meta name="description" content="Ex-Amazon in Ads (6+ yrs) | AWS Certified Solutions Architect | Software & Hardware Product Maker" />
+  <meta property="og:title" content="Hairuo Liu · Digital Card" />
+  <meta property="og:description" content="Ex-Amazon in Ads (6+ yrs) | AWS Certified Solutions Architect | Software & Hardware Product Maker" />
   <meta property="og:type" content="profile" />
-  <meta property="og:image" content="https://example.com/cover.png" />
+  <meta property="og:image" content="https://hairuoliu.github.io/nfc-card/avatar.png" />
 
   <!-- FontAwesome CDN (图标库,含品牌图标) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
@@ -272,16 +272,15 @@
 
     // ===== 基本信息 / Basic Info =====
     name: "Hairuo Liu",                                       // 显示姓名
-    title: "Product · Operations · 前 Amazon",                // [待补] 头衔 / 一句话职位
-    bio: "前 Amazon · 产品与运营,专注规模化增长与用户体验",  // [待补] 替换为你的 LinkedIn 真实简介/headline
+    title: "Ex-Amazon in Ads · AWS Solutions Architect",      // 一句话头衔
+    bio: "Ex-Amazon in Ads (6+ yrs) | AWS Certified Solutions Architect | Experienced in Amazon AWS and Big Data | Software & Hardware Product Maker (3D Parametric Design & E-commerce)",
 
     // ===== 头像 / Avatar =====
     // type: "image" 使用图片链接; type: "text" 使用首字母文字 Logo
-    // [待补] 把 LinkedIn 头像链接贴到 imageUrl,并把 type 改为 "image"
     avatar: {
-      type: "text",            // "image" or "text"
-      imageUrl: "",            // LinkedIn 头像直链 (待补)
-      text: "HL"               // 当前占位文字 Logo
+      type: "image",           // "image" or "text"
+      imageUrl: "./avatar.png",// 本地头像图片 (已放入仓库,GitHub Pages 可直接访问)
+      text: "HL"               // 文字 Logo 备用(当 type="text" 时显示)
     },
 
     // ===== 主题配色 / Theme (黄 + 黑,专业风) =====
@@ -380,10 +379,10 @@
     r.setProperty("--gradient-end",   CARD_CONFIG.theme.gradientEnd);
     r.setProperty("--accent",         CARD_CONFIG.theme.accent);
     // 同步更新页面标题与分享元数据 (best-effort)
-    document.title = CARD_CONFIG.name + " · 电子名片";
+    document.title = CARD_CONFIG.name + " · Digital Card";
     const ogTitle = document.querySelector('meta[property="og:title"]');
     const ogDesc  = document.querySelector('meta[property="og:description"]');
-    if (ogTitle) ogTitle.setAttribute("content", CARD_CONFIG.name);
+    if (ogTitle) ogTitle.setAttribute("content", CARD_CONFIG.name + " · Digital Card");
     if (ogDesc)  ogDesc.setAttribute("content", CARD_CONFIG.bio);
   }
 
