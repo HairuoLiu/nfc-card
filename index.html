@@ -278,7 +278,7 @@
 
 <body>
   <!-- ===================== 顶部安装提示 / Install hint (mobile only) ===================== -->
-  <div class="install-hint" id="installHint" data-i18n="installHint">📱 可添加到主屏幕，像 App 一样使用</div>
+  <div class="install-hint" id="installHint">📱 Safari：点分享 →「添加到主屏幕」</div>
 
   <!-- ===================== 主卡片 / Main Card ===================== -->
   <main class="card" id="card">
@@ -379,7 +379,8 @@
       toastSaved: "名片已保存",
       toastLinkCopied: "链接已复制",
       toastLinkFail: "复制失败,请手动复制地址",
-      installHint: "📱 可添加到主屏幕，像 App 一样使用",
+      installHintIOS: "📱 Safari：点分享 →「添加到主屏幕」",
+      installHintAndroid: "📱 Chrome：菜单 ⋮ →「添加到主屏幕」",
       shareLink: "分享名片",
       sendVcf: "发我名片",
       qrLabel: "二维码",
@@ -399,7 +400,8 @@
       toastSaved: "Contact saved",
       toastLinkCopied: "Link copied",
       toastLinkFail: "Copy failed, please copy the URL manually",
-      installHint: "📱 Add to Home Screen — opens like an app",
+      installHintIOS: "📱 Safari: tap Share → Add to Home Screen",
+      installHintAndroid: "📱 Chrome: menu ⋮ → Add to Home screen",
       shareLink: "Share Card",
       sendVcf: "Add me",
       qrLabel: "QR",
@@ -416,6 +418,8 @@
   if (LANG !== "zh" && LANG !== "en") {
     LANG = (navigator.language || "zh").toLowerCase().startsWith("zh") ? "zh" : "en";
   }
+  // 平台识别: iOS 走 Safari 分享步骤, 其他(Android 等)走 Chrome 菜单步骤
+  const IS_IOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
   function t(key) { return (I18N[LANG] && I18N[LANG][key]) || I18N.zh[key] || key; }
 
   function applyI18n() {
@@ -429,6 +433,8 @@
       if (I18N[LANG][key] !== undefined) el.setAttribute("aria-label", t(key));
     });
     document.getElementById("langToggleLabel").textContent = LANG === "zh" ? "EN" : "中文";
+    // 安装提示: 按平台显示对应浏览器的具体步骤
+    document.getElementById("installHint").textContent = t(IS_IOS ? "installHintIOS" : "installHintAndroid");
   }
 
   function setLang(lang) {
@@ -781,14 +787,14 @@
       setLang(LANG === "zh" ? "en" : "zh");
     });
 
-    // 顶部安装提示: 仅移动端显示, 出现后停留 3 秒再缓慢上滑消失
+    // 顶部安装提示: 仅移动端显示, 出现后停留 5 秒再缓慢上滑消失
     const hint = document.getElementById("installHint");
     if (window.matchMedia("(max-width: 520px)").matches) {
       requestAnimationFrame(() => requestAnimationFrame(() => hint.classList.add("show")));
       setTimeout(() => {
         hint.classList.add("hide");
         setTimeout(() => { hint.style.display = "none"; }, 700); // 等上滑动画结束再移除
-      }, 3000);
+      }, 5000);
     }
 
     // 关闭弹窗: 点击遮罩或关闭按钮
