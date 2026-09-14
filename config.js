@@ -26,7 +26,7 @@ window.CARD_CONFIG = {
 
   // ===== 基本信息 / Basic Info =====
   name: "Hairuo Liu",                                       // 显示姓名
-  title: "Ex-Amazon in Ads · AWS Certified Solutions Architect",  // 一句话头衔
+  title: "Ex-Amazon in Ads · 6+ Years · AWS Certified Solutions Architect",  // 一句话头衔
 
   // 简介: 用 "|" 分隔, 每个片段在手机上单独成行。
   // 前两项(Ex-Amazon / AWS Certified)已放进 title, 这里不再重复。

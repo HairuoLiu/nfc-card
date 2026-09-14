@@ -23,9 +23,9 @@
     (脚本运行后也会尝试用 CARD_CONFIG 动态更新,但静态值才是爬虫读取的来源。)
   -->
   <title>Hairuo Liu · Digital Card</title>
-  <meta name="description" content="Ex-Amazon in Ads · AWS Certified Solutions Architect · Software & Hardware Product Maker" />
+  <meta name="description" content="Ex-Amazon in Ads · 6+ Years · AWS Certified Solutions Architect · Software & Hardware Product Maker" />
   <meta property="og:title" content="Hairuo Liu · Digital Card" />
-  <meta property="og:description" content="Ex-Amazon in Ads · AWS Certified Solutions Architect · Software & Hardware Product Maker" />
+  <meta property="og:description" content="Ex-Amazon in Ads · 6+ Years · AWS Certified Solutions Architect · Software & Hardware Product Maker" />
   <meta property="og:type" content="profile" />
   <meta property="og:image" content="https://hairuoliu.github.io/nfc-card/avatar.png" />
 
@@ -221,6 +221,16 @@
     }
     .modal h3 { font-size: 17px; margin-bottom: 14px; }
     .modal-qr { width: 180px; height: 180px; object-fit: contain; margin: 0 auto 12px; border-radius: 12px; }
+    /* ---- 微信二维码显示视窗 ----
+       图片已物理裁剪为纯二维码本体 (680x680, 去掉原图上方头像/地区 + 下方提示文字),
+       这里直接放大显示整张图 (210x210, 比原 180px +17%), object-fit contain 保证不变形。 */
+    .modal-qr-crop {
+      width: 210px; height: 210px; overflow: hidden;
+      margin: 0 auto 12px; border-radius: 12px; background: #fff;
+    }
+    .modal-qr-crop img {
+      display: block; width: 100%; height: 100%; object-fit: contain;
+    }
     .modal-qr-placeholder {
       width: 180px; height: 180px; margin: 0 auto 12px; border-radius: 12px;
       background: #f2f2f2; color: #999; font-size: 13px;
@@ -675,11 +685,14 @@
     // 二维码
     qrContainer.innerHTML = "";
     if (item.qrImage) {
+      // 裁剪视窗: 只显示二维码本体 (CSS 负偏移裁掉原图上下的头像区/提示文字)
+      const crop = document.createElement("div");
+      crop.className = "modal-qr-crop";
       const img = document.createElement("img");
       img.src = item.qrImage;
       img.alt = "WeChat QR";
-      img.className = "modal-qr";
-      qrContainer.appendChild(img);
+      crop.appendChild(img);
+      qrContainer.appendChild(crop);
     } else {
       const ph = document.createElement("div");
       ph.className = "modal-qr-placeholder";
