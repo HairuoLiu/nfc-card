@@ -240,6 +240,20 @@
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+    /* ---- 顶部"添加到主屏幕"提示条 (仅移动端, 出现 3 秒后上滑消失) ---- */
+    .install-hint {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 80;
+      padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      color: var(--text); font-size: 13px; text-align: center;
+      transform: translateY(-110%);
+      transition: transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+      pointer-events: none;
+    }
+    .install-hint.show { transform: translateY(0); }
+    .install-hint.hide { transform: translateY(-110%); }
+
     /* ---- 语言切换悬浮按钮 / Language toggle (bottom-right) ---- */
     .lang-toggle {
       position: fixed;
@@ -263,6 +277,9 @@
 </head>
 
 <body>
+  <!-- ===================== 顶部安装提示 / Install hint (mobile only) ===================== -->
+  <div class="install-hint" id="installHint" data-i18n="installHint">📱 可添加到主屏幕，像 App 一样使用</div>
+
   <!-- ===================== 主卡片 / Main Card ===================== -->
   <main class="card" id="card">
     <!-- 头像 (由 JS 根据 CARD_CONFIG.avatar 渲染) -->
@@ -362,6 +379,7 @@
       toastSaved: "名片已保存",
       toastLinkCopied: "链接已复制",
       toastLinkFail: "复制失败,请手动复制地址",
+      installHint: "📱 可添加到主屏幕，像 App 一样使用",
       shareLink: "分享名片",
       sendVcf: "发我名片",
       qrLabel: "二维码",
@@ -381,6 +399,7 @@
       toastSaved: "Contact saved",
       toastLinkCopied: "Link copied",
       toastLinkFail: "Copy failed, please copy the URL manually",
+      installHint: "📱 Add to Home Screen — opens like an app",
       shareLink: "Share Card",
       sendVcf: "Add me",
       qrLabel: "QR",
@@ -761,6 +780,16 @@
     document.getElementById("langToggle").addEventListener("click", () => {
       setLang(LANG === "zh" ? "en" : "zh");
     });
+
+    // 顶部安装提示: 仅移动端显示, 出现后停留 3 秒再缓慢上滑消失
+    const hint = document.getElementById("installHint");
+    if (window.matchMedia("(max-width: 520px)").matches) {
+      requestAnimationFrame(() => requestAnimationFrame(() => hint.classList.add("show")));
+      setTimeout(() => {
+        hint.classList.add("hide");
+        setTimeout(() => { hint.style.display = "none"; }, 700); // 等上滑动画结束再移除
+      }, 3000);
+    }
 
     // 关闭弹窗: 点击遮罩或关闭按钮
     document.getElementById("modalClose").addEventListener("click", closeWechatModal);
