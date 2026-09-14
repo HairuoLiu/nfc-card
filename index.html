@@ -68,12 +68,20 @@
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     html, body { height: 100%; }
 
+    /* iOS standalone 防白条: html 画布必须有深色底 —— 冷启动时 iOS 视口计算偏小,
+       body 未铺满的区域会露出画布底色 (不设就是纯白); 顺带禁掉橡皮筋回弹露底 */
+    html {
+      background: var(--gradient-end);
+      overscroll-behavior-y: none;
+    }
+
     /* ---- Body: 渐变背景 + 居中布局 ---- */
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
         "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
       background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
-      background-attachment: fixed;
+      /* 注意: 这里不要用 background-attachment: fixed —— iOS standalone 下渲染异常,
+         会在底部露出白色条带 (滚动一次才恢复) */
       color: var(--text);
       min-height: 100vh;
       min-height: 100dvh;
