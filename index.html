@@ -168,19 +168,20 @@
     .footer-row i { font-size: 14px; }
     .footer-row:active { color: #fff; }
 
+    /* ---- 底部三个次要操作 (三列网格: 图标在上 + 小字在下, 触摸目标 ≥64px) ---- */
     .share-row {
-      margin-top: 4px;
-      display: flex; gap: 10px;
+      margin-top: 14px;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
     }
     .share-btn {
-      flex: 1;
-      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-      padding: 10px 12px; border-radius: 30px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+      min-height: 64px; padding: 10px 4px; border-radius: 16px;
       border: 1px solid var(--glass-border);
       background: rgba(255, 255, 255, 0.10); color: var(--text);
-      font-size: 13px; font-weight: 600; cursor: pointer;
+      font-size: 11px; font-weight: 600; line-height: 1.2; cursor: pointer;
       transition: transform 0.15s ease, background 0.25s ease;
     }
+    .share-btn i { font-size: 17px; line-height: 1; }
     .share-btn:hover  { background: rgba(255, 255, 255, 0.20); }
     .share-btn:active { transform: scale(0.95); }
 
@@ -308,7 +309,7 @@
     <div class="modal" role="dialog" aria-modal="true">
       <button class="modal-close" id="qrModalClose" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
       <div class="modal-icon" style="background:var(--accent);color:#1a1a1a"><i class="fa-solid fa-qrcode"></i></div>
-      <h3 data-i18n="qrTitle">扫一扫我的名片</h3>
+      <h3 data-i18n="qrTitle">我的名片二维码</h3>
       <div id="qrCodeBox" style="display:flex;justify-content:center;margin-bottom:12px;"></div>
       <p class="modal-wechat-id" data-i18n="qrHint" style="margin-bottom:0;">对准二维码扫一扫，即可打开这张名片</p>
     </div>
@@ -361,10 +362,14 @@
       toastSaved: "名片已保存",
       toastLinkCopied: "链接已复制",
       toastLinkFail: "复制失败,请手动复制地址",
-      shareLink: "分享链接",
-      sendVcf: "发送名片文件",
-      qrTitle: "扫一扫我的名片",
-      qrHint: "对准二维码扫一扫，即可打开这张名片"
+      shareLink: "分享名片",
+      sendVcf: "发我名片",
+      qrLabel: "二维码",
+      qrTitle: "我的名片二维码",
+      qrHint: "对准二维码扫一扫，即可打开这张名片",
+      ariaShare: "把这张名片的网址链接分享给他人",
+      ariaVcf: "把我的联系方式以名片文件发送给对方，可直接存入通讯录",
+      ariaQr: "打开二维码，供对方扫码查看我的名片"
     },
     en: {
       save: "Save Contact",
@@ -376,10 +381,14 @@
       toastSaved: "Contact saved",
       toastLinkCopied: "Link copied",
       toastLinkFail: "Copy failed, please copy the URL manually",
-      shareLink: "Share link",
-      sendVcf: "Send contact file",
-      qrTitle: "Scan to open my card",
-      qrHint: "Point the camera at the QR code to open this card"
+      shareLink: "Share Card",
+      sendVcf: "Add me",
+      qrLabel: "QR",
+      qrTitle: "My card QR code",
+      qrHint: "Point the camera at the QR code to open this card",
+      ariaShare: "Share the link to this digital card",
+      ariaVcf: "Send my contact details as a card file the recipient can save to contacts",
+      ariaQr: "Show a QR code that opens this card"
     }
   };
 
@@ -395,6 +404,10 @@
     document.querySelectorAll("[data-i18n]").forEach(el => {
       const key = el.getAttribute("data-i18n");
       if (I18N[LANG][key] !== undefined) el.textContent = t(key);
+    });
+    document.querySelectorAll("[data-i18n-aria]").forEach(el => {
+      const key = el.getAttribute("data-i18n-aria");
+      if (I18N[LANG][key] !== undefined) el.setAttribute("aria-label", t(key));
     });
     document.getElementById("langToggleLabel").textContent = LANG === "zh" ? "EN" : "中文";
   }
@@ -566,25 +579,30 @@
     const shareRow = document.createElement("div");
     shareRow.className = "share-row";
 
-    // 按钮 1: 分享链接 (系统分享面板, 含 AirDrop / 微信等)
+    // 按钮 1: 分享名片链接 (系统分享面板, 含 AirDrop / 微信等)
     const shareBtn = document.createElement("button");
     shareBtn.className = "share-btn";
+    shareBtn.setAttribute("data-i18n-aria", "ariaShare");
+    shareBtn.setAttribute("aria-label", t("ariaShare"));
     shareBtn.innerHTML = `<i class="fa-solid fa-share-nodes"></i><span data-i18n="shareLink">${t("shareLink")}</span>`;
     shareBtn.addEventListener("click", shareCard);
     shareRow.appendChild(shareBtn);
 
-    // 按钮 2: 发送 .vcf 名片文件 (Web Share Level 2, 可直接 AirDrop 文件)
+    // 按钮 2: 发送 .vcf 名片文件 (Web Share Level 2, 可直接 AirDrop, 对方点开即存通讯录)
     const vcfBtn = document.createElement("button");
     vcfBtn.className = "share-btn";
-    vcfBtn.innerHTML = `<i class="fa-solid fa-address-card"></i><span data-i18n="sendVcf">${t("sendVcf")}</span>`;
+    vcfBtn.setAttribute("data-i18n-aria", "ariaVcf");
+    vcfBtn.setAttribute("aria-label", t("ariaVcf"));
+    vcfBtn.innerHTML = `<i class="fa-solid fa-file-export"></i><span data-i18n="sendVcf">${t("sendVcf")}</span>`;
     vcfBtn.addEventListener("click", shareVCF);
     shareRow.appendChild(vcfBtn);
 
     // 按钮 3: 二维码 (没有 NFC 的场合扫码打开)
     const qrBtn = document.createElement("button");
     qrBtn.className = "share-btn";
-    qrBtn.setAttribute("aria-label", "QR code");
-    qrBtn.innerHTML = `<i class="fa-solid fa-qrcode"></i>`;
+    qrBtn.setAttribute("data-i18n-aria", "ariaQr");
+    qrBtn.setAttribute("aria-label", t("ariaQr"));
+    qrBtn.innerHTML = `<i class="fa-solid fa-qrcode"></i><span data-i18n="qrLabel">${t("qrLabel")}</span>`;
     qrBtn.addEventListener("click", openQrModal);
     shareRow.appendChild(qrBtn);
 

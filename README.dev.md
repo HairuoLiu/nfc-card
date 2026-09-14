@@ -192,9 +192,9 @@ const SOCIAL_ICONS = { ..., tiktok: "fa-brands fa-tiktok" };
 - Modal closes on overlay click, close button, or `Escape` (`index.html:475`).
 
 ### 4.7 Sharing & QR (footer action row)
-The footer renders a three-button row (`renderFooter`):
-1. **Share link** (`shareCard`) — `navigator.share` with the page URL; clipboard fallback.
-2. **Send contact file** (`shareVCF`) — builds the vCard via `generateVCF()` and shares it as a **file** through the Web Share API Level 2 (`navigator.canShare({ files })`, supported by iOS Safari and Android Chrome). Falls back to `downloadVCF()` where file sharing is unavailable. This is what makes **AirDrop** work: the recipient receives the `.vcf` directly, no webpage visit needed.
+The footer renders a three-column grid of compact secondary actions (icon on top, small label below; the primary "Save Contact" button stays the only gold/accent element):
+1. **Share Card** (`shareCard`) — `navigator.share` with the page URL; clipboard fallback.
+2. **Add me** (`shareVCF`) — builds the vCard via `generateVCF()` and shares it as a **file** through the Web Share API Level 2 (`navigator.canShare({ files })`, supported by iOS Safari and Android Chrome). Falls back to `downloadVCF()` where file sharing is unavailable. This is what makes **AirDrop** work: the recipient receives the `.vcf` directly, no webpage visit needed.
 3. **QR button** (`openQrModal`) — renders `location.href` as a QR code using `qrcodejs` (cdnjs CDN). If the CDN is unreachable, it falls back to copying the link with a toast.
 
 ### 4.8 PWA / Add to Home Screen

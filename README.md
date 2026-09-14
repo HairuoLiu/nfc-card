@@ -30,7 +30,7 @@ All you need to do: **edit one config file, or fill out the visual editor form �
 | 🎨 Visual editor | `editor.html` generates the config for you — **zero coding needed** |
 | 🌈 Custom colors | Change 3 color values to re-skin, no CSS required |
 | 📲 Add to Home Screen | Installable PWA — "Add to Home Screen" in Safari and it runs fullscreen like a native app |
-| 📤 Send contact file | One tap sends your `.vcf` through the share sheet (AirDrop / WhatsApp / email…) — the other side saves it straight to contacts |
+| 📤 Add me | One tap sends your `.vcf` through the share sheet (AirDrop / WhatsApp / email…) — the other side saves it straight to contacts |
 | 🔳 QR code | Built-in QR button for phones and situations without NFC |
 
 ---
@@ -100,8 +100,8 @@ Your card is an installable web app — no App Store, no review, works on any ph
 | Situation | What to tap |
 |---|---|
 | Someone nearby, any phone | Have them **tap your NFC tag** (see Deploy step 5) — card opens instantly |
-| AirDrop to a nearby iPhone / Mac | **Send contact file** → pick AirDrop → they receive a `.vcf` and save it to contacts directly |
-| Chat apps (WeChat / WhatsApp / SMS…) | **Share link**, or **Send contact file** as an attachment |
+| AirDrop to a nearby iPhone / Mac | **Add me** → pick AirDrop → they receive a `.vcf` and save it to contacts directly |
+| Chat apps (WeChat / WhatsApp / SMS…) | **Share Card**, or the `.vcf` file as an attachment |
 | Old phone / desktop / no NFC | Tap the **QR button** 🎛️ on the card and let them scan |
 
 ---
@@ -174,7 +174,7 @@ A: Yes. MIT License — modify, use commercially, redistribute freely, just keep
 A: Currently a fixed theme controlled by `theme`. For system-adaptive dark mode, open an Issue or add a `prefers-color-scheme` media query in `index.html`.
 
 **Q: How do I send my card through AirDrop?**
-A: Tap **Send contact file** on the card — the share sheet opens with AirDrop as an option. The other side receives a `.vcf` file and saves it straight into contacts. (Unsupported browsers fall back to downloading the file.)
+A: Tap **Add me** on the card — the share sheet opens with AirDrop as an option. The other side receives a `.vcf` file and saves it straight into contacts. (Unsupported browsers fall back to downloading the file.)
 
 **Q: Changed my avatar but the home-screen icon is still the old photo?**
 A: The icon comes from the `icon-*.png` files, not `avatar.png` directly. Replace them with your new photo (same filenames), then remove and re-add the home-screen icon — iOS caches icons aggressively.
