@@ -240,19 +240,36 @@
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    /* ---- 顶部"添加到主屏幕"提示条 (仅移动端, 出现 3 秒后上滑消失) ---- */
+    /* ---- 顶部"添加到主屏幕"提示 (仅移动端, 悬浮胶囊, 5 秒后淡出上滑消失) ---- */
     .install-hint {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 80;
-      padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
-      background: rgba(0, 0, 0, 0.72);
-      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-      color: var(--text); font-size: 13px; text-align: center;
-      transform: translateY(-110%);
-      transition: transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+      position: fixed; top: calc(env(safe-area-inset-top, 0px) + 10px);
+      left: 50%; z-index: 80;
+      display: inline-flex; align-items: center; gap: 8px;
+      max-width: calc(100vw - 32px); white-space: nowrap;
+      padding: 8px 16px 8px 9px; border-radius: 999px;
+      background: rgba(20, 20, 20, 0.84);
+      backdrop-filter: blur(16px) saturate(150%); -webkit-backdrop-filter: blur(16px) saturate(150%);
+      border: 1px solid rgba(255, 184, 0, 0.30);   /* 金色只做 1px 点缀, 不抢主按钮 */
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+      color: var(--text); font-size: 13px; font-weight: 600; letter-spacing: 0.2px;
       pointer-events: none;
+      opacity: 0; transform: translateX(-50%) translateY(-24px);
+      transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.34, 1.4, 0.64, 1);
     }
-    .install-hint.show { transform: translateY(0); }
-    .install-hint.hide { transform: translateY(-110%); }
+    .install-hint.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .install-hint.hide { opacity: 0; transform: translateX(-50%) translateY(-24px); }
+    .install-hint__icon {
+      flex: none; width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255, 184, 0, 0.16); color: var(--accent); font-size: 11px;
+      box-shadow: 0 0 0 1px rgba(255, 184, 0, 0.4);
+    }
+    .install-hint.show .install-hint__icon { animation: iconPulse 1.1s ease-out 2; }
+    @keyframes iconPulse {
+      0%   { box-shadow: 0 0 0 1px rgba(255, 184, 0, 0.4); }
+      60%  { box-shadow: 0 0 0 7px rgba(255, 184, 0, 0); }
+      100% { box-shadow: 0 0 0 1px rgba(255, 184, 0, 0.4); }
+    }
 
     /* ---- 语言切换悬浮按钮 / Language toggle (bottom-right) ---- */
     .lang-toggle {
@@ -278,7 +295,10 @@
 
 <body>
   <!-- ===================== 顶部安装提示 / Install hint (mobile only) ===================== -->
-  <div class="install-hint" id="installHint">📱 Safari：点分享 →「添加到主屏幕」</div>
+  <div class="install-hint" id="installHint" role="status">
+    <span class="install-hint__icon"><i class="fa-solid fa-share-nodes" id="installHintIcon"></i></span>
+    <span id="installHintText">Safari：点分享 →「添加到主屏幕」</span>
+  </div>
 
   <!-- ===================== 主卡片 / Main Card ===================== -->
   <main class="card" id="card">
@@ -379,8 +399,8 @@
       toastSaved: "名片已保存",
       toastLinkCopied: "链接已复制",
       toastLinkFail: "复制失败,请手动复制地址",
-      installHintIOS: "📱 Safari：点分享 →「添加到主屏幕」",
-      installHintAndroid: "📱 Chrome：菜单 ⋮ →「添加到主屏幕」",
+      installHintIOS: "Safari：点分享 →「添加到主屏幕」",
+      installHintAndroid: "Chrome：菜单 ⋮ →「添加到主屏幕」",
       shareLink: "分享名片",
       sendVcf: "发我名片",
       qrLabel: "二维码",
@@ -400,8 +420,8 @@
       toastSaved: "Contact saved",
       toastLinkCopied: "Link copied",
       toastLinkFail: "Copy failed, please copy the URL manually",
-      installHintIOS: "📱 Safari: tap Share → Add to Home Screen",
-      installHintAndroid: "📱 Chrome: menu ⋮ → Add to Home screen",
+      installHintIOS: "Safari: tap Share → Add to Home Screen",
+      installHintAndroid: "Chrome: menu ⋮ → Add to Home screen",
       shareLink: "Share Card",
       sendVcf: "Add me",
       qrLabel: "QR",
@@ -413,10 +433,10 @@
     }
   };
 
-  // 当前语言: localStorage 记忆 > 浏览器语言自动判断 > 默认中文
+  // 当前语言: localStorage 记忆 > 默认英文 (国际化优先, 与编辑器一致)
   let LANG = lsGet("nfc_card_lang");
   if (LANG !== "zh" && LANG !== "en") {
-    LANG = (navigator.language || "zh").toLowerCase().startsWith("zh") ? "zh" : "en";
+    LANG = "en";
   }
   // 平台识别: iOS 走 Safari 分享步骤, 其他(Android 等)走 Chrome 菜单步骤
   const IS_IOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
@@ -433,8 +453,11 @@
       if (I18N[LANG][key] !== undefined) el.setAttribute("aria-label", t(key));
     });
     document.getElementById("langToggleLabel").textContent = LANG === "zh" ? "EN" : "中文";
-    // 安装提示: 按平台显示对应浏览器的具体步骤
-    document.getElementById("installHint").textContent = t(IS_IOS ? "installHintIOS" : "installHintAndroid");
+    // 安装提示: 按平台显示对应浏览器的具体步骤 (图标也随之切换)
+    const hintText = document.getElementById("installHintText");
+    if (hintText) hintText.textContent = t(IS_IOS ? "installHintIOS" : "installHintAndroid");
+    const hintIcon = document.getElementById("installHintIcon");
+    if (hintIcon) hintIcon.className = IS_IOS ? "fa-solid fa-share-nodes" : "fa-solid fa-ellipsis-v";
   }
 
   function setLang(lang) {
@@ -787,13 +810,15 @@
       setLang(LANG === "zh" ? "en" : "zh");
     });
 
-    // 顶部安装提示: 仅移动端显示, 出现后停留 5 秒再缓慢上滑消失
+    // 顶部安装提示: 仅移动端显示; 已安装到主屏幕(独立窗口模式)则不再提示
     const hint = document.getElementById("installHint");
-    if (window.matchMedia("(max-width: 520px)").matches) {
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches
+      || window.navigator.standalone === true;   // iOS Safari 添加到主屏幕后的标记
+    if (!isStandalone && window.matchMedia("(max-width: 520px)").matches) {
       requestAnimationFrame(() => requestAnimationFrame(() => hint.classList.add("show")));
       setTimeout(() => {
         hint.classList.add("hide");
-        setTimeout(() => { hint.style.display = "none"; }, 700); // 等上滑动画结束再移除
+        setTimeout(() => { hint.style.display = "none"; }, 600); // 等淡出动画结束再移除
       }, 5000);
     }
 
