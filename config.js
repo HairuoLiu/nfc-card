@@ -30,7 +30,7 @@ window.CARD_CONFIG = {
 
   // 简介: 用 "|" 分隔, 每个片段在手机上单独成行。
   // 前两项(Ex-Amazon / AWS Certified)已放进 title, 这里不再重复。
-  bio: "Experienced in Amazon AWS and Big Data | Software & Hardware Product Maker | 3D Parametric Design & E-commerce",
+  bio: "Software & Hardware Product Maker | 3D Parametric Design & E-commerce",
 
   // ===== 头像 / Avatar =====
   // type: "image" 使用图片; type: "text" 使用首字母文字 Logo
