@@ -58,7 +58,9 @@
       --gradient-start: #0d0d0d;   /* 背景渐变起始色 (overridden by JS) */
       --gradient-end:   #2a2300;   /* 背景渐变结束色 (overridden by JS) */
       --accent:         #FFB800;   /* 主按钮背景色 (overridden by JS)    */
-      --glass-bg:       rgba(255, 255, 255, 0.10);
+      /* 注意: 0.10 -> 0.05。玻璃提亮越强, 卡片内外色差越明显(尤其纯渐变背景上),
+         手机截图里"卡片底下发灰不统一"就是这个物理现象。降到 5% 几乎贴合底色但仍留一点玻璃感 */
+      --glass-bg:       rgba(255, 255, 255, 0.05);
       --glass-border:   rgba(255, 255, 255, 0.22);
       --text:           rgba(255, 255, 255, 0.96);
       --text-dim:       rgba(255, 255, 255, 0.70);
@@ -99,8 +101,9 @@
       width: 100%;
       max-width: 430px;
       background: var(--glass-bg);
-      backdrop-filter: blur(22px) saturate(160%);
-      -webkit-backdrop-filter: blur(22px) saturate(160%);
+      /* 模糊 22px -> 14px: 同样是为了缩小卡片内外色差, 同时保留轻微毛玻璃质感 */
+      backdrop-filter: blur(14px) saturate(160%);
+      -webkit-backdrop-filter: blur(14px) saturate(160%);
       border: 1px solid var(--glass-border);
       border-radius: var(--radius);
       box-shadow: 0 20px 50px rgba(13, 13, 13, 0.35);
