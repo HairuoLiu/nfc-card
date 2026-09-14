@@ -29,6 +29,9 @@ All you need to do: **edit one config file, or fill out the visual editor form �
 | 🟡 WeChat handling | Tapping WeChat shows a QR-code popup, or copies the WeChat ID |
 | 🎨 Visual editor | `editor.html` generates the config for you — **zero coding needed** |
 | 🌈 Custom colors | Change 3 color values to re-skin, no CSS required |
+| 📲 Add to Home Screen | Installable PWA — "Add to Home Screen" in Safari and it runs fullscreen like a native app |
+| 📤 Send contact file | One tap sends your `.vcf` through the share sheet (AirDrop / WhatsApp / email…) — the other side saves it straight to contacts |
+| 🔳 QR code | Built-in QR button for phones and situations without NFC |
 
 ---
 
@@ -78,6 +81,28 @@ All you need to do: **edit one config file, or fill out the visual editor form �
 > ⚠️ **Important**: After forking, you must enable Pages yourself (once) — GitHub does not inherit the original repo's Pages setting automatically. Same as step 3 above — 1 minute.
 
 > 💡 **Custom domain**: Want your own domain? In `Settings → Pages → Custom domain` enter it, then add a `CNAME` record in your DNS.
+
+---
+
+## 📲 Use It Like an App on Your Phone (PWA)
+
+Your card is an installable web app — no App Store, no review, works on any phone:
+
+1. Open your card URL in **Safari** (iPhone) or **Chrome** (Android).
+2. **iPhone**: tap `Share → Add to Home Screen` → `Add`.
+   **Android**: browser menu → `Install app` / `Add to Home screen`.
+3. Done — a real app icon (generated from `avatar.png`) appears on the home screen. Tapping it opens your card **fullscreen with no browser bar**, exactly like a native app.
+
+> 🖼️ The home-screen icon comes from `icon-192.png` / `icon-512.png` / `icon-maskable-512.png` in the repo. If you replace your avatar, replace those files with your new photo too (any square image, keep the same filenames), then remove and re-add the home-screen icon — iOS caches icons.
+
+### 📤 Share it in every way
+
+| Situation | What to tap |
+|---|---|
+| Someone nearby, any phone | Have them **tap your NFC tag** (see Deploy step 5) — card opens instantly |
+| AirDrop to a nearby iPhone / Mac | **Send contact file** → pick AirDrop → they receive a `.vcf` and save it to contacts directly |
+| Chat apps (WeChat / WhatsApp / SMS…) | **Share link**, or **Send contact file** as an attachment |
+| Old phone / desktop / no NFC | Tap the **QR button** 🎛️ on the card and let them scan |
 
 ---
 
@@ -148,21 +173,34 @@ A: Yes. MIT License — modify, use commercially, redistribute freely, just keep
 **Q: Auto dark mode?**
 A: Currently a fixed theme controlled by `theme`. For system-adaptive dark mode, open an Issue or add a `prefers-color-scheme` media query in `index.html`.
 
+**Q: How do I send my card through AirDrop?**
+A: Tap **Send contact file** on the card — the share sheet opens with AirDrop as an option. The other side receives a `.vcf` file and saves it straight into contacts. (Unsupported browsers fall back to downloading the file.)
+
+**Q: Changed my avatar but the home-screen icon is still the old photo?**
+A: The icon comes from the `icon-*.png` files, not `avatar.png` directly. Replace them with your new photo (same filenames), then remove and re-add the home-screen icon — iOS caches icons aggressively.
+
+**Q: The QR button shows nothing?**
+A: The QR library loads from a CDN — make sure the phone is online. If the CDN is blocked, the button falls back to copying your link automatically.
+
 ---
 
 ## 🧩 File Structure
 
 ```
 nfc-card/
-├─ index.html      # Page body (usually no need to edit)
-├─ config.js       # ⭐ The ONLY file you edit (all content lives here)
-├─ editor.html     # Visual editor (generates config.js, zero code)
-├─ avatar.png      # Your avatar (optional, external URL also works)
-├─ README.md       # English documentation (this file)
-├─ README.zh-CN.md # 中文说明 (Chinese documentation)
-├─ README.dev.md   # Developer / design guide (technical schema)
-├─ AGENT.md        # Instructions for AI agents customizing this repo
-└─ LICENSE         # MIT License
+├─ index.html           # Page body (usually no need to edit)
+├─ config.js            # ⭐ The ONLY file you edit (all content lives here)
+├─ editor.html          # Visual editor (generates config.js, zero code)
+├─ avatar.png           # Your avatar (optional, external URL also works)
+├─ manifest.json        # PWA manifest (name / icons / theme color)
+├─ icon-192.png         # PWA + Apple touch icon (generated from avatar.png)
+├─ icon-512.png         # PWA icon 512px
+├─ icon-maskable-512.png# PWA maskable icon (Android adaptive icons)
+├─ README.md            # English documentation (this file)
+├─ README.zh-CN.md      # 中文说明 (Chinese documentation)
+├─ README.dev.md        # Developer / design guide (technical schema)
+├─ AGENT.md             # Instructions for AI agents customizing this repo
+└─ LICENSE              # MIT License
 ```
 
 > 💡 Hacking? `index.html` reads `window.CARD_CONFIG`. Even if `config.js` is missing, a fallback default keeps the page from going blank.

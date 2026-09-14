@@ -19,6 +19,8 @@ The repo is a static site composed of a presentational page, a single config fil
 | `config.js` | **Single source of truth.** All user-editable content lives here as `window.CARD_CONFIG = {...}`. | ✅ Always |
 | `editor.html` | Zero-backend visual editor. Lets non-coders fill a form and **download/export** a `config.js`. Needs no server. | ❌ Tool only |
 | `avatar.png` | Local avatar image referenced by `./avatar.png`. Replace to change the photo. | ✅ Optional |
+| `manifest.json` | PWA manifest (name, icons, theme color). Static file — forkers should update `name`. | 🔧 Rarely |
+| `icon-192.png` / `icon-512.png` / `icon-maskable-512.png` | PWA + Apple touch icons, square-cropped from `avatar.png` (maskable = avatar on theme-color background, 62% safe zone). Replace together with the avatar. | ✅ With avatar |
 
 ### Data flow
 
@@ -187,6 +189,17 @@ const SOCIAL_ICONS = { ..., tiktok: "fa-brands fa-tiktok" };
 - The modal shows `qrImage` if provided, otherwise a placeholder prompting you to set `qrImage` (`index.html:445`).
 - If `wechatId` is set, the modal shows the ID and a **"Copy ID"** button (`index.html:459`).
 - Modal closes on overlay click, close button, or `Escape` (`index.html:475`).
+
+### 4.7 Sharing & QR (footer action row)
+The footer renders a three-button row (`renderFooter`):
+1. **Share link** (`shareCard`) — `navigator.share` with the page URL; clipboard fallback.
+2. **Send contact file** (`shareVCF`) — builds the vCard via `generateVCF()` and shares it as a **file** through the Web Share API Level 2 (`navigator.canShare({ files })`, supported by iOS Safari and Android Chrome). Falls back to `downloadVCF()` where file sharing is unavailable. This is what makes **AirDrop** work: the recipient receives the `.vcf` directly, no webpage visit needed.
+3. **QR button** (`openQrModal`) — renders `location.href` as a QR code using `qrcodejs` (cdnjs CDN). If the CDN is unreachable, it falls back to copying the link with a toast.
+
+### 4.8 PWA / Add to Home Screen
+- `manifest.json` (static: `display: standalone`, theme `#0d0d0d`, three PNG icons) + `apple-touch-icon` link + iOS meta tags in `index.html` `<head>`.
+- Safari → *Add to Home Screen* / Chrome → *Install app* yields a fullscreen standalone app; the icon files are square crops of `avatar.png` (`icon-maskable-512.png` places the avatar at 62% of the canvas on the theme background for Android adaptive icons).
+- No service worker by design — the template stays single-file and zero-config; offline caching can be added later without breaking anything.
 
 ---
 

@@ -32,6 +32,22 @@
   <!-- FontAwesome CDN (图标库,含品牌图标) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
+  <!--
+    📲 PWA / 添加到主屏幕 (Add to Home Screen)
+    Safari: 分享 → 添加到主屏幕;  Android Chrome: 浏览器菜单 → 安装应用。
+    图标来自仓库里的 icon-*.png (由 avatar.png 生成) —— 换头像时记得同步替换图标。
+  -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Digital Card" />
+  <meta name="theme-color" content="#0d0d0d" />
+
+  <!-- QR 码生成库 (名片页"扫一扫"按钮用) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
   <style>
     /* ======================================================================
        THEME TOKENS  ·  主题变量
@@ -152,14 +168,17 @@
     .footer-row i { font-size: 14px; }
     .footer-row:active { color: #fff; }
 
-    .share-btn {
+    .share-row {
       margin-top: 4px;
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      align-self: center;
-      padding: 10px 18px; border-radius: 30px;
+      display: flex; gap: 10px;
+    }
+    .share-btn {
+      flex: 1;
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 10px 12px; border-radius: 30px;
       border: 1px solid var(--glass-border);
       background: rgba(255, 255, 255, 0.10); color: var(--text);
-      font-size: 13.5px; font-weight: 600; cursor: pointer;
+      font-size: 13px; font-weight: 600; cursor: pointer;
       transition: transform 0.15s ease, background 0.25s ease;
     }
     .share-btn:hover  { background: rgba(255, 255, 255, 0.20); }
@@ -284,6 +303,17 @@
     <span id="langToggleLabel">EN</span>
   </button>
 
+  <!-- ===================== QR 码弹窗 / QR Modal ===================== -->
+  <div class="modal-overlay" id="qrModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true">
+      <button class="modal-close" id="qrModalClose" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-icon" style="background:var(--accent);color:#1a1a1a"><i class="fa-solid fa-qrcode"></i></div>
+      <h3 data-i18n="qrTitle">扫一扫我的名片</h3>
+      <div id="qrCodeBox" style="display:flex;justify-content:center;margin-bottom:12px;"></div>
+      <p class="modal-wechat-id" data-i18n="qrHint" style="margin-bottom:0;">对准二维码扫一扫，即可打开这张名片</p>
+    </div>
+  </div>
+
   <!-- ===================== Toast ===================== -->
   <div class="toast" id="toast"></div>
 
@@ -330,7 +360,12 @@
       toastCopyFail: "复制失败,请手动复制",
       toastSaved: "名片已保存",
       toastLinkCopied: "链接已复制",
-      toastLinkFail: "复制失败,请手动复制地址"
+      toastLinkFail: "复制失败,请手动复制地址",
+      shareLink: "分享链接",
+      sendVcf: "发送名片文件",
+      qrTitle: "扫一扫我的名片",
+      qrHint: "对准二维码扫一扫，即可打开这张名片",
+      toastQrFail: "二维码加载失败,已复制链接"
     },
     en: {
       save: "Save Contact",
@@ -341,7 +376,12 @@
       toastCopyFail: "Copy failed, please copy manually",
       toastSaved: "Contact saved",
       toastLinkCopied: "Link copied",
-      toastLinkFail: "Copy failed, please copy the URL manually"
+      toastLinkFail: "Copy failed, please copy the URL manually",
+      shareLink: "Share link",
+      sendVcf: "Send contact file",
+      qrTitle: "Scan to open my card",
+      qrHint: "Point the camera at the QR code to open this card",
+      toastQrFail: "QR failed to load, link copied instead"
     }
   };
 
@@ -507,11 +547,32 @@
       footer.appendChild(row);
     }
 
+    const shareRow = document.createElement("div");
+    shareRow.className = "share-row";
+
+    // 按钮 1: 分享链接 (系统分享面板, 含 AirDrop / 微信等)
     const shareBtn = document.createElement("button");
     shareBtn.className = "share-btn";
-    shareBtn.innerHTML = `<i class="fa-solid fa-share-nodes"></i><span>${f.shareText}</span>`;
+    shareBtn.innerHTML = `<i class="fa-solid fa-share-nodes"></i><span data-i18n="shareLink">${t("shareLink")}</span>`;
     shareBtn.addEventListener("click", shareCard);
-    footer.appendChild(shareBtn);
+    shareRow.appendChild(shareBtn);
+
+    // 按钮 2: 发送 .vcf 名片文件 (Web Share Level 2, 可直接 AirDrop 文件)
+    const vcfBtn = document.createElement("button");
+    vcfBtn.className = "share-btn";
+    vcfBtn.innerHTML = `<i class="fa-solid fa-address-card"></i><span data-i18n="sendVcf">${t("sendVcf")}</span>`;
+    vcfBtn.addEventListener("click", shareVCF);
+    shareRow.appendChild(vcfBtn);
+
+    // 按钮 3: 二维码 (没有 NFC 的场合扫码打开)
+    const qrBtn = document.createElement("button");
+    qrBtn.className = "share-btn";
+    qrBtn.setAttribute("aria-label", "QR code");
+    qrBtn.innerHTML = `<i class="fa-solid fa-qrcode"></i>`;
+    qrBtn.addEventListener("click", openQrModal);
+    shareRow.appendChild(qrBtn);
+
+    footer.appendChild(shareRow);
   }
 
   // ---------- 微信弹窗 / WeChat modal ----------
@@ -614,6 +675,50 @@
     showToast(ok ? t("toastLinkCopied") : t("toastLinkFail"));
   }
 
+  // ---------- 分享 .vcf 名片文件 / Share the vCard file (Web Share Level 2) ----------
+  // iOS Safari / Android Chrome 支持直接分享文件 → 对方可通过 AirDrop / 微信等接收,
+  // 收到后点开即存入通讯录。不支持分享文件的浏览器回退为直接下载。
+  async function shareVCF() {
+    const vcf = generateVCF();
+    const fileName = (CARD_CONFIG.contact.lastName + CARD_CONFIG.contact.firstName || "contact") + ".vcf";
+    const file = new File([vcf], fileName, { type: "text/vcard" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: CARD_CONFIG.name });
+        return;
+      } catch (e) {
+        if (e && e.name === "AbortError") return; // 用户取消
+      }
+    }
+    downloadVCF(); // 回退: 下载 .vcf
+  }
+
+  // ---------- 二维码弹窗 / QR modal ----------
+  function openQrModal() {
+    const overlay = document.getElementById("qrModal");
+    const box = document.getElementById("qrCodeBox");
+    box.innerHTML = "";
+    if (typeof QRCode === "undefined") {
+      // CDN 加载失败时回退为复制链接
+      copyText(location.href).then(ok => showToast(ok ? t("toastLinkCopied") : t("toastLinkFail")));
+      return;
+    }
+    new QRCode(box, {
+      text: location.href,
+      width: 180, height: 180,
+      colorDark: "#111111", colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.M
+    });
+    overlay.classList.add("show");
+    overlay.setAttribute("aria-hidden", "false");
+  }
+
+  function closeQrModal() {
+    const overlay = document.getElementById("qrModal");
+    overlay.classList.remove("show");
+    overlay.setAttribute("aria-hidden", "true");
+  }
+
   // ---------- 初始化 / Init ----------
   function init() {
     applyTheme();
@@ -634,8 +739,12 @@
     document.getElementById("wechatModal").addEventListener("click", (e) => {
       if (e.target.id === "wechatModal") closeWechatModal();
     });
+    document.getElementById("qrModalClose").addEventListener("click", closeQrModal);
+    document.getElementById("qrModal").addEventListener("click", (e) => {
+      if (e.target.id === "qrModal") closeQrModal();
+    });
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") closeWechatModal();
+      if (e.key === "Escape") { closeWechatModal(); closeQrModal(); }
     });
   }
 
