@@ -65,7 +65,7 @@ window.CARD_CONFIG = {
   // wechat 的特殊字段: wechatId (微信号, 可复制) / qrImage (二维码图片地址)
   socials: [
     { platform: "linkedin",  url: "https://www.linkedin.com/in/hairuo-liu/",          label: "LinkedIn"  },
-    { platform: "wechat",    wechatId: "", qrImage: "",                              label: "WeChat"   },
+    { platform: "wechat",    wechatId: "", qrImage: "./wechat-qr.jpg",          label: "WeChat"   },
     { platform: "instagram", url: "https://www.instagram.com/liuhai.er/",             label: "Instagram" },
     { platform: "facebook",  url: "https://www.facebook.com/94LiuHai",                label: "Facebook"  }
   ],
