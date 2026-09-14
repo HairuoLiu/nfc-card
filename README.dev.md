@@ -1,6 +1,8 @@
 # README.dev — nfc-card (Developer & Designer Guide)
 ### 开发与设计文档 · 数字名片 / NFC 落地页模板
 
+> **中文摘要**：本文档说明 nfc-card 的整体架构（`index.html` 负责渲染 + `config.js` 是唯一数据源 + `editor.html` 可视化导出配置）、`CARD_CONFIG` 完整字段表、内置 10 个社交平台（`SOCIAL_META`）、vCard 生成与分享回退逻辑，以及 GitHub Pages 部署要点。**普通用户请看 [README.md](README.md)（英文）或 [README.zh-CN.md](README.zh-CN.md)（中文）**。
+
 This document explains the **architecture, configuration schema, rendering behavior, and extension points** of the `nfc-card` template so developers and designers can understand, customize, or extend it. For end-user instructions, see [README.md](README.md); for AI agents, see [AGENT.md](AGENT.md).
 
 The template is a **zero-config, single-file digital business card** that renders a polished landing page and is intended to be deployed on **GitHub Pages**. There is no build step, no framework, and no backend.

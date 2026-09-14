@@ -1,13 +1,18 @@
 # 🪪 Digital Card / NFC Landing Page Template
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Deploy: GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-blue)](https://pages.github.com/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)]()
+
+**English** · [简体中文](./README.zh-CN.md)
+
 > A **single-file, zero-config, mobile-first** personal digital business card. Opens instantly when scanned (NFC), fully optimized for iOS / Android, with a glassmorphism style and customizable colors.
 
-The only thing you do: **edit one config file, or fill a visual editor form — no coding required.**
+All you need to do: **edit one config file, or fill out the visual editor form — no coding required.**
 
 - 🌐 Live demo (author's example): https://hairuoliu.github.io/nfc-card/
-- 📘 中文说明：[README.zh-CN.md](./README.zh-CN.md)
-- 🛠️ Developer / design guide：[README.dev.md](./README.dev.md)
-- 🤖 For AI agents customizing this repo：[AGENT.md](./AGENT.md)
+- 🛠️ Developer / design guide: [README.dev.md](./README.dev.md)
+- 🤖 For AI agents customizing this repo: [AGENT.md](./AGENT.md)
 
 ---
 
@@ -27,27 +32,23 @@ The only thing you do: **edit one config file, or fill a visual editor form — 
 
 ---
 
-## 🚀 Three Ways to Use (pick one)
+## 🚀 Two Ways to Use (pick one)
 
 ### Way A: Visual Editor (⭐ Recommended, no code at all)
 
-1. **Fork** this repo first (see "Deploy" step 1 below).
+1. **Copy this repo into your account**: click **`Fork`** at the top-right of this page (see "Deploy" below for details).
 2. Open **`editor.html`** in the repo (or visit `your-url/editor.html` after deploy).
 3. Fill the form: name, title, bio, social links, colors… **live preview on the right**.
 4. Click **"Generate config.js"** → click **"Download config.js"**.
-5. **Replace** the `config.js` in your repo with the downloaded file and commit.
+5. **Upload the downloaded file to your repo**: in your forked repo, click `Add file → Upload files`, drag the downloaded `config.js` in, then click **`Commit changes`**. (Or replace `config.js` locally and push with git, if you prefer.)
 
 > No need to read any code — just copy/paste and click buttons.
 
 ### Way B: Edit `config.js` directly (for fine control)
 
-1. After forking, open **`config.js`**.
+1. After forking, open **`config.js`** in GitHub's web editor (click the pencil icon ✏️).
 2. **Only change the text and links** (every field has Chinese + English comments).
-3. Commit, refresh the page — done.
-
-### Way C: Fork and edit a few lines (minimal)
-
-Don't want the editor? After forking, just edit `name` / `title` / `bio` / the `url`s in `config.js`, commit, and you're live.
+3. Click **`Commit changes`**, refresh the page — done.
 
 > 🛠️ **Developers**: the full `config.js` schema, rendering behavior, and how to add new platforms are documented in [README.dev.md](./README.dev.md).
 
@@ -61,7 +62,7 @@ Don't want the editor? After forking, just edit `name` / `title` / `bio` / the `
    - Click **`Fork`** (top-right) to copy into your account; or
    - Click **`Use this template` → `Create a new repository`** (cleaner, no commit history — recommended).
 2. **Edit content**
-   - Update `config.js` using Way A / B / C above (upload your `avatar.png` if you want a local image).
+   - Update `config.js` using Way A / B above (upload your `avatar.png` if you want a local image).
 3. **Enable Pages**
    - Go to **your** repo → `Settings` → `Pages` → set `Branch` to **`main`** → click **`Save`**.
 4. **Wait ≈ 1 minute**
@@ -70,9 +71,11 @@ Don't want the editor? After forking, just edit `name` / `title` / `bio` / the `
      https://your-username.github.io/repo-name/
      ```
 5. **Write to an NFC chip**
-   - Use **NFC Tools** (iOS / Android) to "write" that URL onto an NTAG chip. Tap with a phone and it opens automatically.
+   - Get an **NTAG213 / NTAG215** sticker or card (a few cents each — NTAG215 is the most reliable and holds a URL easily).
+   - Install **NFC Tools** (free, iOS / Android) → open the app → `Write` → `Add a record` → `URL` → paste your link → tap `Write` and hold your phone against the chip.
+   - Done: tapping any phone against the chip now opens your card automatically.
 
-> ⚠️ **Important**: A forked repo needs Pages **enabled once by yourself** (GitHub does not inherit the original repo's Pages setting). Same as step 3 above — 1 minute.
+> ⚠️ **Important**: After forking, you must enable Pages yourself (once) — GitHub does not inherit the original repo's Pages setting automatically. Same as step 3 above — 1 minute.
 
 > 💡 **Custom domain**: Want your own domain? In `Settings → Pages → Custom domain` enter it, then add a `CNAME` record in your DNS.
 
@@ -102,7 +105,7 @@ Fill both for the safest result; one is enough.
 Two options:
 - **Local image**: name your photo `avatar.png`, upload it to the repo, set `avatar.imageUrl` to `"./avatar.png"`.
 - **External URL**: set `avatar.imageUrl` to any image URL.
-- No image? Set `avatar.type` to `"text"` to show an initial-based logo (default `HL`).
+- No image? Set `avatar.type` to `"text"` to show a letter-logo with your initials (default `HL`).
 
 ### ➕ Add more platform buttons
 Copy a line in `socials`. Valid `platform` values (icons & brand colors built-in):
@@ -127,17 +130,17 @@ Example — blue/white: `gradientStart:"#0a2540"`, `gradientEnd:"#1e3a5f"`, `acc
 **Q: I edited `config.js` but the page didn't change?**
 A: GitHub Pages takes ~1 minute to rebuild. Hard-refresh (`Ctrl / Cmd + Shift + R`) to clear cache.
 
-**Q: After forking, is the link still the author's?**
+**Q: After forking, does my link still point to the author's site?**
 A: No. Each repo's Pages is independent: `your-username.github.io/repo-name/`.
 
 **Q: The share preview image on WeChat / Telegram is wrong?**
-A: Share previews use the **static** `og:` tags at the top of `index.html` (social crawlers don't run JS). Before deploying, change `og:image` / `og:title` / `og:description` in `index.html` to your real info.
+A: Share previews use the **static** `og:` tags at the top of `index.html` (social crawlers don't run JS). Before deploying, change `og:image` / `og:title` / `og:description` in `index.html` to your real info. **This step is optional and skippable** — it only affects the link preview card, not the page itself.
 
 **Q: I can't code at all — can I use this?**
-A: Yes. Use the `editor.html` visual editor: fill form → download → replace file. Three steps.
+A: Yes. Use the `editor.html` visual editor: fill out the form → download → replace file. Three steps.
 
 **Q: Avatar not showing?**
-A: Check `avatar.type` is `"image"` and `imageUrl` is publicly reachable (a GitHub image URL looks like `https://your-username.github.io/repo-name/avatar.png`). Local images must be `git add`ed and pushed.
+A: Check `avatar.type` is `"image"` and `imageUrl` is publicly reachable (a GitHub image URL looks like `https://your-username.github.io/repo-name/avatar.png`). Local images must be committed and pushed to the repo.
 
 **Q: Commercial use / change the logo / remove the author's info?**
 A: Yes. MIT License — modify, use commercially, redistribute freely, just keep the license notice.

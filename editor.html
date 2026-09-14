@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>名片配置编辑器 · Card Editor</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<title>名片配置编辑器 · Card Editor</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 <script src="config.js"></script>
 <style>
   :root{
@@ -78,89 +77,101 @@
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:rgba(0,0,0,.85);color:#fff;padding:10px 18px;border-radius:30px;font-size:13px;opacity:0;transition:.3s;z-index:60;}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   .hint{font-size:11.5px;color:var(--dim);margin-top:6px;}
+  /* ---- 语言切换按钮 / Language toggle (top-right) ---- */
+  .lang-toggle{
+    position:fixed;top:16px;right:16px;z-index:70;
+    width:52px;height:52px;border-radius:50%;
+    border:1px solid var(--line);background:rgba(255,255,255,.08);
+    color:var(--text);font-size:13px;font-weight:700;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;
+    transition:transform .15s,background .25s;box-shadow:0 6px 18px rgba(0,0,0,.35);
+  }
+  .lang-toggle i{font-size:10px;opacity:.8;}
+  .lang-toggle:active{transform:scale(.9);}
+  .lang-toggle:hover{background:rgba(255,255,255,.16);}
 </style>
 </head>
 <body>
-  <h1>🪪 名片配置编辑器</h1>
-  <p class="sub">填完表单 → 点“生成配置” → 下载 <code>config.js</code> 替换进你的仓库即可。零代码基础也能用。</p>
+  <h1>🪪 <span data-i18n="h1">名片配置编辑器</span></h1>
+  <p class="sub" data-i18n="sub">填完表单 → 点“生成配置” → 下载 <code>config.js</code> 替换进你的仓库即可。零代码基础也能用。</p>
 
   <div class="layout">
     <!-- ============ 表单 ============ -->
     <div>
       <div class="card-sec">
-        <h2>① 基本信息</h2>
-        <label>姓名 Name</label>
+        <h2 data-i18n="sec1">① 基本信息</h2>
+        <label data-i18n="labelName">姓名 Name</label>
         <input type="text" id="f_name" />
-        <label>头衔 Title（一句话核心身份）</label>
+        <label data-i18n="labelTitle">头衔 Title（一句话核心身份）</label>
         <input type="text" id="f_title" />
-        <label>简介 Bio（每行一条，手机会自动分行）</label>
+        <label data-i18n="labelBio">简介 Bio（每行一条，手机会自动分行）</label>
         <textarea id="f_bio" placeholder="Experienced in Amazon AWS and Big Data&#10;Software &amp; Hardware Product Maker&#10;3D Parametric Design &amp; E-commerce"></textarea>
-        <p class="hint">提示：每行 = 一句话，生成时会用“ | ”连接。</p>
+        <p class="hint" data-i18n="bioHint">提示：每行 = 一句话，生成时会用“ | ”连接。</p>
       </div>
 
       <div class="card-sec">
-        <h2>② 头像 Avatar</h2>
+        <h2 data-i18n="sec2">② 头像 Avatar</h2>
         <div class="row">
           <div>
-            <label>类型 Type</label>
+            <label data-i18n="labelAvatarType">类型 Type</label>
             <select id="f_avatar_type">
-              <option value="image">图片 image</option>
-              <option value="text">文字 Logo text</option>
+              <option value="image" data-i18n="optImage">图片 image</option>
+              <option value="text" data-i18n="optText">文字 Logo text</option>
             </select>
           </div>
           <div>
-            <label>文字 Logo（type=text 时）</label>
+            <label data-i18n="labelAvatarText">文字 Logo（type=text 时）</label>
             <input type="text" id="f_avatar_text" placeholder="HL" />
           </div>
         </div>
-        <label>头像图片地址 imageUrl（type=image 时填，可写 ./avatar.png）</label>
+        <label data-i18n="labelAvatarUrl">头像图片地址 imageUrl（type=image 时填，可写 ./avatar.png）</label>
         <input type="text" id="f_avatar_url" placeholder="./avatar.png" />
       </div>
 
       <div class="card-sec">
-        <h2>③ 配色 Theme</h2>
+        <h2 data-i18n="sec3">③ 配色 Theme</h2>
         <div class="colors">
-          <div><label>背景渐变起</label><input type="color" id="f_grad1" /></div>
-          <div><label>背景渐变止</label><input type="color" id="f_grad2" /></div>
-          <div><label>强调色</label><input type="color" id="f_accent" /></div>
+          <div><label data-i18n="labelGrad1">背景渐变起</label><input type="color" id="f_grad1" /></div>
+          <div><label data-i18n="labelGrad2">背景渐变止</label><input type="color" id="f_grad2" /></div>
+          <div><label data-i18n="labelAccent">强调色</label><input type="color" id="f_accent" /></div>
         </div>
       </div>
 
       <div class="card-sec">
-        <h2>④ 通讯录（保存到通讯录用）</h2>
+        <h2 data-i18n="sec4">④ 通讯录（保存到通讯录用）</h2>
         <div class="row">
-          <div><label>名 First</label><input type="text" id="f_c_first" /></div>
-          <div><label>姓 Last</label><input type="text" id="f_c_last" /></div>
+          <div><label data-i18n="labelFirst">名 First</label><input type="text" id="f_c_first" /></div>
+          <div><label data-i18n="labelLast">姓 Last</label><input type="text" id="f_c_last" /></div>
         </div>
         <div class="row">
-          <div><label>公司 Org</label><input type="text" id="f_c_org" /></div>
-          <div><label>职位 Title</label><input type="text" id="f_c_title" /></div>
+          <div><label data-i18n="labelOrg">公司 Org</label><input type="text" id="f_c_org" /></div>
+          <div><label data-i18n="labelJobTitle">职位 Title</label><input type="text" id="f_c_title" /></div>
         </div>
         <div class="row">
-          <div><label>电话 Phone</label><input type="text" id="f_c_phone" /></div>
-          <div><label>邮箱 Email</label><input type="text" id="f_c_email" /></div>
+          <div><label data-i18n="labelPhone">电话 Phone</label><input type="text" id="f_c_phone" /></div>
+          <div><label data-i18n="labelEmail">邮箱 Email</label><input type="text" id="f_c_email" /></div>
         </div>
-        <label>网站 Website</label>
+        <label data-i18n="labelWebsite">网站 Website</label>
         <input type="url" id="f_c_web" />
       </div>
 
       <div class="card-sec">
-        <h2>⑤ 社交按钮 Socials</h2>
+        <h2 data-i18n="sec5">⑤ 社交按钮 Socials</h2>
         <div id="socials_list"></div>
-        <button class="btn ghost add-btn sm" id="add_social">+ 添加社交按钮</button>
+        <button class="btn ghost add-btn sm" id="add_social" data-i18n="addSocial">+ 添加社交按钮</button>
       </div>
 
       <div class="card-sec">
-        <h2>⑥ 底部 Footer</h2>
-        <div class="check"><input type="checkbox" id="f_show_phone" /><span>公开显示电话</span></div>
-        <div class="check"><input type="checkbox" id="f_show_email" /><span>公开显示邮箱</span></div>
-        <label>分享按钮文案</label>
+        <h2 data-i18n="sec6">⑥ 底部 Footer</h2>
+        <div class="check"><input type="checkbox" id="f_show_phone" /><span data-i18n="labelShowPhone">公开显示电话</span></div>
+        <div class="check"><input type="checkbox" id="f_show_email" /><span data-i18n="labelShowEmail">公开显示邮箱</span></div>
+        <label data-i18n="labelShareText">分享按钮文案</label>
         <input type="text" id="f_share_text" />
       </div>
 
       <div class="btn-row">
-        <button class="btn" id="gen_btn">⚙️ 生成 config.js</button>
-        <button class="btn ghost" id="reset_btn">↺ 重置为当前配置</button>
+        <button class="btn" id="gen_btn" data-i18n="genBtn">⚙️ 生成 config.js</button>
+        <button class="btn ghost" id="reset_btn" data-i18n="resetBtn">↺ 重置为当前配置</button>
       </div>
     </div>
 
@@ -173,30 +184,128 @@
         <div class="pv-bio" id="pv_bio"></div>
         <div class="pv-socials" id="pv_socials"></div>
       </div>
-      <p class="hint" style="margin-top:10px;">↑ 实时预览。改完表单这里会立刻更新。</p>
+      <p class="hint" style="margin-top:10px;" data-i18n="previewHint">↑ 实时预览。改完表单这里会立刻更新。</p>
     </div>
   </div>
 
   <!-- ============ 代码弹层 ============ -->
   <div class="code-modal" id="codeModal">
     <div class="code-box">
-      <h3>✅ 配置已生成</h3>
-      <p style="font-size:13px;color:#555;margin-bottom:10px;">
+      <h3 data-i18n="modalTitle">✅ 配置已生成</h3>
+      <p style="font-size:13px;color:#555;margin-bottom:10px;" data-i18n="modalDesc">
         下载 <b>config.js</b> 并替换到你仓库里的同名文件，提交后刷新页面即可生效。
       </p>
       <pre id="codeOut"></pre>
       <div class="btn-row">
-        <button class="btn" id="download_btn">⬇️ 下载 config.js</button>
-        <button class="btn ghost" id="copy_btn">📋 复制代码</button>
-        <button class="btn ghost" id="close_btn">关闭</button>
+        <button class="btn" id="download_btn" data-i18n="downloadBtn">⬇️ 下载 config.js</button>
+        <button class="btn ghost" id="copy_btn" data-i18n="copyBtn">📋 复制代码</button>
+        <button class="btn ghost" id="close_btn" data-i18n="closeBtn">关闭</button>
       </div>
     </div>
   </div>
   <div class="toast" id="toast"></div>
 
+  <!-- ===================== 语言切换 / Language toggle ===================== -->
+  <button class="lang-toggle" id="langToggle" aria-label="Switch language / 切换语言">
+    <i class="fa-solid fa-language"></i>
+    <span id="langToggleLabel">EN</span>
+  </button>
+
 <script>
 /* ---------- 工具 ---------- */
 const $ = id => document.getElementById(id);
+
+/* ---------- 界面多语言 / UI i18n (中文 / EN) ---------- */
+const I18N = {
+  zh: {
+    h1: "名片配置编辑器",
+    sub: "填完表单 → 点“生成配置” → 下载 <code>config.js</code> 替换进你的仓库即可。零代码基础也能用。",
+    sec1: "① 基本信息", sec2: "② 头像 Avatar", sec3: "③ 配色 Theme",
+    sec4: "④ 通讯录（保存到通讯录用）", sec5: "⑤ 社交按钮 Socials", sec6: "⑥ 底部 Footer",
+    labelName: "姓名 Name", labelTitle: "头衔 Title（一句话核心身份）",
+    labelBio: "简介 Bio（每行一条，手机会自动分行）",
+    bioHint: "提示：每行 = 一句话，生成时会用“ | ”连接。",
+    labelAvatarType: "类型 Type", optImage: "图片 image", optText: "文字 Logo text",
+    labelAvatarText: "文字 Logo（type=text 时）",
+    labelAvatarUrl: "头像图片地址 imageUrl（type=image 时填，可写 ./avatar.png）",
+    labelGrad1: "背景渐变起", labelGrad2: "背景渐变止", labelAccent: "强调色",
+    labelFirst: "名 First", labelLast: "姓 Last", labelOrg: "公司 Org",
+    labelJobTitle: "职位 Title", labelPhone: "电话 Phone", labelEmail: "邮箱 Email", labelWebsite: "网站 Website",
+    addSocial: "+ 添加社交按钮",
+    labelShowPhone: "公开显示电话", labelShowEmail: "公开显示邮箱", labelShareText: "分享按钮文案",
+    genBtn: "⚙️ 生成 config.js", resetBtn: "↺ 重置为当前配置",
+    previewHint: "↑ 实时预览。改完表单这里会立刻更新。",
+    modalTitle: "✅ 配置已生成",
+    modalDesc: "下载 <b>config.js</b> 并替换到你仓库里的同名文件，提交后刷新页面即可生效。",
+    downloadBtn: "⬇️ 下载 config.js", copyBtn: "📋 复制代码", closeBtn: "关闭",
+    toastDownloaded: "已下载 config.js，去替换仓库里的文件吧",
+    toastCopied: "代码已复制",
+    toastCopyFail: "复制失败，请手动选择代码",
+    toastReset: "已重置为当前配置",
+    phLabel: "显示名", phWechatId: "微信号 wechatId", phQr: "二维码图片地址 qrImage", phUrl: "链接 URL",
+    docTitle: "名片配置编辑器 · Card Editor",
+    genComment: "本文件由 editor.html 生成 — 直接替换原 config.js 即可"
+  },
+  en: {
+    h1: "Card Config Editor",
+    sub: "Fill the form → click “Generate” → download <code>config.js</code> and replace it in your repo. No coding needed.",
+    sec1: "① Basic Info", sec2: "② Avatar", sec3: "③ Theme",
+    sec4: "④ Contact (for Save to Contacts)", sec5: "⑤ Social Buttons", sec6: "⑥ Footer",
+    labelName: "Name", labelTitle: "Title (one-line core identity)",
+    labelBio: "Bio (one line each, auto split on mobile)",
+    bioHint: "Tip: each line = one sentence, joined with \" | \" on generate.",
+    labelAvatarType: "Type", optImage: "Image", optText: "Letter logo",
+    labelAvatarText: "Letter Logo (when type=text)",
+    labelAvatarUrl: "Image URL (when type=image; e.g. ./avatar.png)",
+    labelGrad1: "Gradient start", labelGrad2: "Gradient end", labelAccent: "Accent",
+    labelFirst: "First name", labelLast: "Last name", labelOrg: "Organization",
+    labelJobTitle: "Job title", labelPhone: "Phone", labelEmail: "Email", labelWebsite: "Website",
+    addSocial: "+ Add social button",
+    labelShowPhone: "Show phone publicly", labelShowEmail: "Show email publicly", labelShareText: "Share button text",
+    genBtn: "⚙️ Generate config.js", resetBtn: "↺ Reset to current config",
+    previewHint: "↑ Live preview. Updates as you type.",
+    modalTitle: "✅ Config generated",
+    modalDesc: "Download <b>config.js</b> and replace the file of the same name in your repo, then commit and refresh.",
+    downloadBtn: "⬇️ Download config.js", copyBtn: "📋 Copy code", closeBtn: "Close",
+    toastDownloaded: "config.js downloaded — replace it in your repo",
+    toastCopied: "Code copied",
+    toastCopyFail: "Copy failed, please select the code manually",
+    toastReset: "Reset to current config",
+    phLabel: "Label", phWechatId: "WeChat ID", phQr: "QR image URL", phUrl: "URL",
+    docTitle: "Card Config Editor · 名片编辑器",
+    genComment: "Generated by editor.html — replace your original config.js with this file"
+  }
+};
+
+// 含 HTML 的文案用 innerHTML, 其余用 textContent
+const I18N_HTML_KEYS = ["sub", "modalDesc"];
+
+let LANG = localStorage.getItem("nfc_card_lang");
+if (LANG !== "zh" && LANG !== "en") {
+  // 编辑器默认英文 (国际化优先); 名片页 index.html 会按浏览器语言自动判断
+  LANG = "en";
+}
+function t(key) { return (I18N[LANG] && I18N[LANG][key]) || I18N.zh[key] || key; }
+
+function applyI18n() {
+  document.documentElement.lang = LANG === "zh" ? "zh-CN" : "en";
+  document.title = t("docTitle");
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.getAttribute("data-i18n");
+    if (I18N[LANG][key] === undefined) return;
+    if (I18N_HTML_KEYS.includes(key)) { el.innerHTML = t(key); }
+    else { el.textContent = t(key); }
+  });
+  document.getElementById("langToggleLabel").textContent = LANG === "zh" ? "EN" : "中文";
+  renderSocials(); // 动态行的 placeholder 也要刷新
+}
+
+function setLang(lang) {
+  LANG = lang;
+  localStorage.setItem("nfc_card_lang", lang);
+  applyI18n();
+}
+
 const SOCIAL_ICONS = {
   linkedin:"fa-brands fa-linkedin-in", wechat:"fa-brands fa-weixin", instagram:"fa-brands fa-instagram",
   facebook:"fa-brands fa-facebook-f", twitter:"fa-brands fa-x-twitter", github:"fa-brands fa-github",
@@ -247,14 +356,14 @@ function renderSocials(){
         <select data-i="${idx}" class="s-platform">
           ${PLATFORMS.map(p=>`<option value="${p}" ${p===s.platform?"selected":""}>${p}</option>`).join("")}
         </select>
-        <input type="text" class="s-label" data-i="${idx}" value="${s.label||""}" placeholder="显示名" />
+        <input type="text" class="s-label" data-i="${idx}" value="${s.label||""}" placeholder="${t("phLabel")}" />
         <button class="btn ghost sm s-del" data-i="${idx}">✕</button>
       </div>
       ${isWechat ? `
-        <input type="text" class="s-wechatid" data-i="${idx}" value="${s.wechatId||""}" placeholder="微信号 wechatId" style="margin-top:8px;" />
-        <input type="text" class="s-qr" data-i="${idx}" value="${s.qrImage||""}" placeholder="二维码图片地址 qrImage" style="margin-top:8px;" />
+        <input type="text" class="s-wechatid" data-i="${idx}" value="${s.wechatId||""}" placeholder="${t("phWechatId")}" style="margin-top:8px;" />
+        <input type="text" class="s-qr" data-i="${idx}" value="${s.qrImage||""}" placeholder="${t("phQr")}" style="margin-top:8px;" />
       ` : `
-        <input type="url" class="s-url" data-i="${idx}" value="${s.url||""}" placeholder="链接 URL" style="margin-top:8px;" />
+        <input type="url" class="s-url" data-i="${idx}" value="${s.url||""}" placeholder="${t("phUrl")}" style="margin-top:8px;" />
       `}
     `;
     box.appendChild(row);
@@ -323,7 +432,7 @@ function buildConfigJS(){
     if(s.platform==="wechat") return `    { platform: "wechat",    wechatId: ${j(s.wechatId)}, qrImage: ${j(s.qrImage)}, label: ${j(s.label)} }`;
     return `    { platform: "${s.platform}", url: ${j(s.url)}, label: ${j(s.label)} }`;
   }).join(",\n");
-  return `/* 本文件由 editor.html 生成 — 直接替换原 config.js 即可 */
+  return `/* ${t("genComment")} */
 window.CARD_CONFIG = {
   name: ${j(cfg.name)},
   title: ${j(cfg.title)},
@@ -373,16 +482,20 @@ $("codeModal").addEventListener("click",e=>{ if(e.target===$("codeModal")) $("co
 $("download_btn").onclick=()=>{
   const blob=new Blob([window._code],{type:"application/javascript"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="config.js"; a.click();
-  showToast("已下载 config.js，去替换仓库里的文件吧");
+  showToast(t("toastDownloaded"));
 };
 $("copy_btn").onclick=async()=>{
-  try{ await navigator.clipboard.writeText(window._code); showToast("代码已复制"); }
-  catch(e){ showToast("复制失败，请手动选择代码"); }
+  try{ await navigator.clipboard.writeText(window._code); showToast(t("toastCopied")); }
+  catch(e){ showToast(t("toastCopyFail")); }
 };
-$("reset_btn").onclick=()=>{ loadForm(); showToast("已重置为当前配置"); };
+$("reset_btn").onclick=()=>{ loadForm(); showToast(t("toastReset")); };
+
+/* 语言切换 / Language toggle */
+$("langToggle").onclick=()=>setLang(LANG==="zh"?"en":"zh");
 
 /* 初始化 */
 loadForm();
+applyI18n();
 </script>
 </body>
 </html>

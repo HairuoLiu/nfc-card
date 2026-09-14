@@ -219,6 +219,26 @@
       z-index: 60; max-width: 84%; text-align: center;
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ---- 语言切换悬浮按钮 / Language toggle (bottom-right) ---- */
+    .lang-toggle {
+      position: fixed;
+      right: calc(16px + env(safe-area-inset-right));
+      bottom: calc(16px + env(safe-area-inset-bottom));
+      z-index: 70;
+      width: 52px; height: 52px; border-radius: 50%;
+      border: 1px solid var(--glass-border);
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      color: var(--text); font-size: 13px; font-weight: 700; letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 1px;
+      transition: transform 0.15s ease, background 0.25s ease;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    }
+    .lang-toggle i { font-size: 10px; opacity: 0.8; }
+    .lang-toggle:active { transform: scale(0.9); }
+    .lang-toggle:hover { background: rgba(0, 0, 0, 0.7); }
   </style>
 </head>
 
@@ -236,7 +256,7 @@
     <!-- 一键保存通讯录 -->
     <button class="btn-primary" id="saveContact">
       <i class="fa-solid fa-address-card"></i>
-      <span>保存到通讯录 · Save Contact</span>
+      <span id="saveContactText" data-i18n="save">保存到通讯录</span>
     </button>
 
     <!-- 社交按钮 (由 JS 根据 CARD_CONFIG.socials 渲染) -->
@@ -251,12 +271,18 @@
     <div class="modal" role="dialog" aria-modal="true">
       <button class="modal-close" id="modalClose" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
       <div class="modal-icon"><i class="fa-brands fa-weixin"></i></div>
-      <h3>微信 WeChat</h3>
+      <h3 id="wechatModalTitle" data-i18n="wechatTitle">微信</h3>
       <div id="qrContainer"></div>
       <p class="modal-wechat-id" id="wechatIdText"></p>
-      <button class="modal-btn" id="copyWechatBtn">复制微信号 · Copy ID</button>
+      <button class="modal-btn" id="copyWechatBtn" data-i18n="copyId">复制微信号</button>
     </div>
   </div>
+
+  <!-- ===================== 语言切换 / Language toggle ===================== -->
+  <button class="lang-toggle" id="langToggle" aria-label="Switch language / 切换语言">
+    <i class="fa-solid fa-language"></i>
+    <span id="langToggleLabel">EN</span>
+  </button>
 
   <!-- ===================== Toast ===================== -->
   <div class="toast" id="toast"></div>
@@ -291,6 +317,61 @@
   /* ======================================================================
      ⛟ 以下为逻辑代码,一般无需修改 / Logic below — usually no need to edit.
      ====================================================================== */
+
+  // ---------- 界面多语言 / UI i18n (EN / 中文) ----------
+  // 界面文案双语切换; 名片内容(name/title/bio 等)来自 CARD_CONFIG, 不参与翻译。
+  const I18N = {
+    zh: {
+      save: "保存到通讯录",
+      wechatTitle: "微信",
+      copyId: "复制微信号",
+      qrPlaceholder: "在 CARD_CONFIG 中填写 qrImage 即可显示二维码",
+      toastIdCopied: "已复制微信号",
+      toastCopyFail: "复制失败,请手动复制",
+      toastSaved: "名片已保存",
+      toastLinkCopied: "链接已复制",
+      toastLinkFail: "复制失败,请手动复制地址"
+    },
+    en: {
+      save: "Save Contact",
+      wechatTitle: "WeChat",
+      copyId: "Copy ID",
+      qrPlaceholder: "Set qrImage in CARD_CONFIG to show your QR code",
+      toastIdCopied: "WeChat ID copied",
+      toastCopyFail: "Copy failed, please copy manually",
+      toastSaved: "Contact saved",
+      toastLinkCopied: "Link copied",
+      toastLinkFail: "Copy failed, please copy the URL manually"
+    }
+  };
+
+  // 当前语言: localStorage 记忆 > 浏览器语言自动判断 > 默认中文
+  let LANG = localStorage.getItem("nfc_card_lang");
+  if (LANG !== "zh" && LANG !== "en") {
+    LANG = (navigator.language || "zh").toLowerCase().startsWith("zh") ? "zh" : "en";
+  }
+  function t(key) { return (I18N[LANG] && I18N[LANG][key]) || I18N.zh[key] || key; }
+
+  function applyI18n() {
+    document.documentElement.lang = LANG === "zh" ? "zh-CN" : "en";
+    document.querySelectorAll("[data-i18n]").forEach(el => {
+      const key = el.getAttribute("data-i18n");
+      if (I18N[LANG][key] !== undefined) el.textContent = t(key);
+    });
+    document.getElementById("langToggleLabel").textContent = LANG === "zh" ? "EN" : "中文";
+  }
+
+  function setLang(lang) {
+    LANG = lang;
+    localStorage.setItem("nfc_card_lang", lang);
+    applyI18n();
+    // 已打开过的微信弹窗内容也需要刷新文案
+    const overlay = document.getElementById("wechatModal");
+    if (overlay.classList.contains("show")) {
+      // 简单处理: 关闭弹窗避免残留旧文案
+      closeWechatModal();
+    }
+  }
 
   // 社交平台元信息: 图标 (FontAwesome class) + 品牌色
   // Social platform metadata: icon class + brand color
@@ -451,7 +532,7 @@
     } else {
       const ph = document.createElement("div");
       ph.className = "modal-qr-placeholder";
-      ph.textContent = "在 CARD_CONFIG 中填写 qrImage 即可显示二维码";
+      ph.textContent = t("qrPlaceholder");
       qrContainer.appendChild(ph);
     }
 
@@ -461,7 +542,7 @@
       copyBtn.style.display = "";
       copyBtn.onclick = async () => {
         const ok = await copyText(item.wechatId);
-        showToast(ok ? "已复制微信号 · ID copied" : "复制失败,请手动复制");
+        showToast(ok ? t("toastIdCopied") : t("toastCopyFail"));
       };
     } else {
       idText.textContent = "";
@@ -511,7 +592,7 @@
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast("名片已保存 · Contact saved");
+    showToast(t("toastSaved"));
   }
 
   // ---------- 分享 / Share ----------
@@ -530,7 +611,7 @@
     }
     // 回退: 复制链接到剪贴板
     const ok = await copyText(location.href);
-    showToast(ok ? "链接已复制 · Link copied" : "复制失败,请手动复制地址");
+    showToast(ok ? t("toastLinkCopied") : t("toastLinkFail"));
   }
 
   // ---------- 初始化 / Init ----------
@@ -539,8 +620,14 @@
     renderProfile();
     renderSocials();
     renderFooter();
+    applyI18n();
 
     document.getElementById("saveContact").addEventListener("click", downloadVCF);
+
+    // 语言切换按钮 / Language toggle
+    document.getElementById("langToggle").addEventListener("click", () => {
+      setLang(LANG === "zh" ? "en" : "zh");
+    });
 
     // 关闭弹窗: 点击遮罩或关闭按钮
     document.getElementById("modalClose").addEventListener("click", closeWechatModal);

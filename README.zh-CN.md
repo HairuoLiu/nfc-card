@@ -1,13 +1,18 @@
 # 🪪 电子名片 / NFC 落地页模板 · Digital Card（中文）
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Deploy: GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-blue)](https://pages.github.com/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)]()
+
+[English](./README.md) · **简体中文**
+
 > 一个**单文件、零配置、移动端优先**的个人电子名片。扫码（NFC）即开，完美适配 iOS / Android，毛玻璃风格，支持自定义配色。
 
 你唯一要做的：**改一个配置文件，或打开可视化编辑器填表 —— 不需要会写代码。**
 
 - 🌐 效果预览（作者示例）：https://hairuoliu.github.io/nfc-card/
-- 📗 English：[README.md](./README.md)
-- 🛠️ 开发者 / 设计文档：[README.dev.md](./README.dev.md)
-- 🤖 给 AI 看的改稿说明：[AGENT.md](./AGENT.md)
+- 🛠️ 开发者 / 设计文档：[README.dev.md](./README.dev.md)（暂为英文）
+- 🤖 给 AI 看的改稿说明：[AGENT.md](./AGENT.md)（暂为英文，AI 可直接阅读）
 
 ---
 
@@ -27,27 +32,23 @@
 
 ---
 
-## 🚀 三种使用方式（任选其一，都很快）
+## 🚀 两种使用方式（任选其一，都很快）
 
 ### 方式 A：可视化编辑器（⭐ 最推荐，完全不用碰代码）
 
-1. 先 **Fork** 本仓库（见下方「部署」第 1 步）。
+1. **把仓库复制到自己账号下**：点本页面右上角的 **`Fork`**（详见下方「部署」第 1 步）。
 2. 打开仓库里的 **`editor.html`**（或部署上线后访问 `你的地址/editor.html`）。
 3. 在表单里填：姓名、头衔、简介、社交链接、配色……**右侧实时预览**。
 4. 点 **「生成 config.js」** → 点 **「下载 config.js」**。
-5. 把下载的文件**替换**进你仓库里的 `config.js`，提交（Commit）即可。
+5. **把下载的文件传回你的仓库**：在你 Fork 的仓库页面，点 `Add file → Upload files`，把下载的 `config.js` 拖进去，点 **`Commit changes`** 提交即可。（习惯命令行的话，也可以本地替换后 push。）
 
 > 全程不用看懂任何代码，复制粘贴 + 点按钮就行。
 
 ### 方式 B：直接改 `config.js`（适合想精细微调的人）
 
-1. Fork 后，打开仓库里的 **`config.js`**。
+1. Fork 后，在 GitHub 网页上打开 **`config.js`**（点铅笔 ✏️ 图标进入编辑）。
 2. **只改里面的文字和链接**（每一项都有中文 + 英文注释）。
-3. 提交（Commit），刷新页面就生效。
-
-### 方式 C：纯 Fork 改几行（极简）
-
-连编辑器都不想开？Fork 后只改 `config.js` 里 `name` / `title` / `bio` / 各 `url` 这几行，提交即可上线。
+3. 点 **`Commit changes`** 提交，刷新页面就生效。
 
 > 🛠️ **开发者**：完整的 `config.js` 字段结构、渲染逻辑、如何新增平台，见 [README.dev.md](./README.dev.md)。
 
@@ -59,9 +60,9 @@
 
 1. **复制仓库**
    - 点右上角 **`Fork`**（在自己的账号下复制一份）；或
-   - 点 **`Use this template` → `Create a new repository`**（更干净，不继承我的提交历史，推荐）。
+   - 点 **`Use this template` → `Create a new repository`**（更干净，不继承原作者的提交历史，推荐）。
 2. **改内容**
-   - 用上面的「方式 A / B / C」改好 `config.js`（需要换头像就上传你的 `avatar.png`）。
+   - 用上面的「方式 A / B」改好 `config.js`（需要换头像就上传你的 `avatar.png`）。
 3. **开启网页**
    - 进入你**自己的**仓库 → `Settings` → `Pages` → `Branch` 选 **`main`** → 点 **`Save`**。
 4. **等待约 1 分钟**
@@ -70,7 +71,9 @@
      https://你的用户名.github.io/仓库名/
      ```
 5. **写入 NFC 芯片**
-   - 用 **NFC Tools**（iOS / Android 都有）把上面这个链接「写」进 NTAG 芯片，手机一贴即自动打开。
+   - 买一张 **NTAG213 / NTAG215** 贴纸卡或白卡（几毛钱一张，NTAG215 最稳、容量轻松放下一个链接）。
+   - 装上 **NFC Tools**（iOS / Android 都免费）→ 打开 App → `写入（Write）` → `添加记录` → `URL` → 粘贴你的链接 → 点 `写入`，把手机贴在芯片上即可。
+   - 完成：任何手机一碰芯片，就会自动打开你的名片。
 
 > ⚠️ **重要**：Fork 出来的仓库，**Pages 需要你自己重新开启一次**（GitHub 不会自动继承原仓库的 Pages 设置）。步骤同上第 3 步，1 分钟搞定。
 
@@ -131,13 +134,13 @@ A：GitHub Pages 大约 1 分钟才重新构建完成。刷新前可强制刷新
 A：不会。每个仓库的 Pages 是独立的，你的链接是 `你的用户名.github.io/仓库名/`，和原作者无关。
 
 **Q：微信 / Telegram 里分享预览图是占位或不对？**
-A：分享预览靠 `index.html` 顶部的**静态** `og:` 标签（社交平台爬虫不执行 JS）。部署前把 `index.html` 里的 `og:image` / `og:title` / `og:description` 改成你的真实信息即可。
+A：分享预览靠 `index.html` 顶部的**静态** `og:` 标签（社交平台爬虫不执行 JS）。部署前把 `index.html` 里的 `og:image` / `og:title` / `og:description` 改成你的真实信息即可。**这一步可以跳过**——只影响分享出来的预览卡片，不影响名片页面本身。
 
 **Q：完全不会写代码，能用吗？**
 A：能。直接用 `editor.html` 可视化编辑器，填表 → 下载 → 替换文件，三步搞定。
 
 **Q：头像不显示？**
-A：检查 `avatar.type` 是否为 `"image"` 且 `imageUrl` 地址可公开访问（GitHub 图片地址通常是 `https://你的用户名.github.io/仓库名/avatar.png`）。本地图片需先 `git add` 并推送。
+A：检查 `avatar.type` 是否为 `"image"` 且 `imageUrl` 地址可公开访问（GitHub 图片地址通常是 `https://你的用户名.github.io/仓库名/avatar.png`）。本地图片需先上传到仓库并推送。
 
 **Q：能商用 / 改 logo / 去掉我的信息吗？**
 A：可以。基于 MIT License，随意修改、商用、再分发，只需保留版权声明即可。
