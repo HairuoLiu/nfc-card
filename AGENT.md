@@ -66,8 +66,7 @@ window.CARD_CONFIG = {
 
   footer: {
     showPhone:  false,        // show phone row at bottom (uses contact.phone)
-    showEmail:  true,         // show email row at bottom (uses contact.email)
-    shareText:  "Share this card"
+    showEmail:  true          // show email row at bottom (uses contact.email)
   }
 };
 ```
@@ -83,7 +82,7 @@ window.CARD_CONFIG = {
 | `theme.gradientStart` / `theme.gradientEnd` / `theme.accent` | Page background gradient + button/accent color |
 | `contact.*` | Data exported to the "Save Contact" `.vcf` file |
 | `socials[]` | Social icon buttons |
-| `footer.showPhone` / `footer.showEmail` / `footer.shareText` | Bottom contact rows + share button text |
+| `footer.showPhone` / `footer.showEmail` | Bottom contact rows |
 
 ### `bio` line convention
 Use the pipe character `|` to separate lines, e.g. `"A | B | C"`. Each segment is trimmed and

@@ -340,7 +340,7 @@
       { platform: "instagram", url: "#", label: "Instagram" },
       { platform: "facebook",  url: "#", label: "Facebook" }
     ],
-    footer: { showPhone: false, showEmail: true, shareText: "Share this card" }
+    footer: { showPhone: false, showEmail: true }
   };
 
 
@@ -364,8 +364,7 @@
       shareLink: "分享链接",
       sendVcf: "发送名片文件",
       qrTitle: "扫一扫我的名片",
-      qrHint: "对准二维码扫一扫，即可打开这张名片",
-      toastQrFail: "二维码加载失败,已复制链接"
+      qrHint: "对准二维码扫一扫，即可打开这张名片"
     },
     en: {
       save: "Save Contact",
@@ -380,13 +379,12 @@
       shareLink: "Share link",
       sendVcf: "Send contact file",
       qrTitle: "Scan to open my card",
-      qrHint: "Point the camera at the QR code to open this card",
-      toastQrFail: "QR failed to load, link copied instead"
+      qrHint: "Point the camera at the QR code to open this card"
     }
   };
 
   // 当前语言: localStorage 记忆 > 浏览器语言自动判断 > 默认中文
-  let LANG = localStorage.getItem("nfc_card_lang");
+  let LANG = lsGet("nfc_card_lang");
   if (LANG !== "zh" && LANG !== "en") {
     LANG = (navigator.language || "zh").toLowerCase().startsWith("zh") ? "zh" : "en";
   }
@@ -403,7 +401,7 @@
 
   function setLang(lang) {
     LANG = lang;
-    localStorage.setItem("nfc_card_lang", lang);
+    lsSet("nfc_card_lang", lang);
     applyI18n();
     // 已打开过的微信弹窗内容也需要刷新文案
     const overlay = document.getElementById("wechatModal");
@@ -411,6 +409,20 @@
       // 简单处理: 关闭弹窗避免残留旧文案
       closeWechatModal();
     }
+  }
+
+  // ---------- 通用小工具 / Small shared helpers ----------
+  // 弹窗遮罩开关 (微信弹窗 / QR 弹窗共用)
+  function setOverlay(el, show) {
+    el.classList.toggle("show", show);
+    el.setAttribute("aria-hidden", show ? "false" : "true");
+  }
+  // localStorage 安全包装 (隐私模式等极端环境不抛异常)
+  function lsGet(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+  function lsSet(key, val) { try { localStorage.setItem(key, val); } catch (e) { /* ignore */ } }
+  // vCard 下载文件名 (downloadVCF / shareVCF 共用)
+  function getVcfFileName() {
+    return (CARD_CONFIG.contact.lastName + CARD_CONFIG.contact.firstName || "contact") + ".vcf";
   }
 
   // 社交平台元信息: 图标 (FontAwesome class) + 品牌色
@@ -466,12 +478,8 @@
     r.setProperty("--gradient-start", CARD_CONFIG.theme.gradientStart);
     r.setProperty("--gradient-end",   CARD_CONFIG.theme.gradientEnd);
     r.setProperty("--accent",         CARD_CONFIG.theme.accent);
-    // 同步更新页面标题与分享元数据 (best-effort)
+    // 注意: og: 分享预览标签是静态的 (爬虫不执行 JS), 请直接编辑 <head> 里的 og: 标签。
     document.title = CARD_CONFIG.name + " · Digital Card";
-    const ogTitle = document.querySelector('meta[property="og:title"]');
-    const ogDesc  = document.querySelector('meta[property="og:description"]');
-    if (ogTitle) ogTitle.setAttribute("content", CARD_CONFIG.name + " · Digital Card");
-    if (ogDesc)  ogDesc.setAttribute("content", CARD_CONFIG.bio.split("|").map(s => s.trim()).join(" · "));
   }
 
   // ---------- 渲染个人信息 / Render profile ----------
@@ -536,14 +544,22 @@
       const row = document.createElement("a");
       row.className = "footer-row";
       row.href = "tel:" + c.phone;
-      row.innerHTML = `<i class="fa-solid fa-phone"></i><span>${c.phone}</span>`;
+      const ic = document.createElement("i");
+      ic.className = "fa-solid fa-phone";
+      const sp = document.createElement("span");
+      sp.textContent = c.phone;
+      row.append(ic, sp);
       footer.appendChild(row);
     }
     if (f.showEmail && c.email) {
       const row = document.createElement("a");
       row.className = "footer-row";
       row.href = "mailto:" + c.email;
-      row.innerHTML = `<i class="fa-solid fa-envelope"></i><span>${c.email}</span>`;
+      const ic = document.createElement("i");
+      ic.className = "fa-solid fa-envelope";
+      const sp = document.createElement("span");
+      sp.textContent = c.email;
+      row.append(ic, sp);
       footer.appendChild(row);
     }
 
@@ -610,14 +626,11 @@
       copyBtn.style.display = "none";
     }
 
-    overlay.classList.add("show");
-    overlay.setAttribute("aria-hidden", "false");
+    setOverlay(overlay, true);
   }
 
   function closeWechatModal() {
-    const overlay = document.getElementById("wechatModal");
-    overlay.classList.remove("show");
-    overlay.setAttribute("aria-hidden", "true");
+    setOverlay(document.getElementById("wechatModal"), false);
   }
 
   // ---------- 生成并下载 vCard (.vcf) ----------
@@ -648,11 +661,12 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = (CARD_CONFIG.contact.lastName + CARD_CONFIG.contact.firstName || "contact") + ".vcf";
+    a.download = getVcfFileName();
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // 延迟释放: Safari 在 click 同步回收 blob URL 可能导致下载失败
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
     showToast(t("toastSaved"));
   }
 
@@ -680,8 +694,7 @@
   // 收到后点开即存入通讯录。不支持分享文件的浏览器回退为直接下载。
   async function shareVCF() {
     const vcf = generateVCF();
-    const fileName = (CARD_CONFIG.contact.lastName + CARD_CONFIG.contact.firstName || "contact") + ".vcf";
-    const file = new File([vcf], fileName, { type: "text/vcard" });
+    const file = new File([vcf], getVcfFileName(), { type: "text/vcard" });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: CARD_CONFIG.name });
@@ -709,14 +722,11 @@
       colorDark: "#111111", colorLight: "#ffffff",
       correctLevel: QRCode.CorrectLevel.M
     });
-    overlay.classList.add("show");
-    overlay.setAttribute("aria-hidden", "false");
+    setOverlay(overlay, true);
   }
 
   function closeQrModal() {
-    const overlay = document.getElementById("qrModal");
-    overlay.classList.remove("show");
-    overlay.setAttribute("aria-hidden", "true");
+    setOverlay(document.getElementById("qrModal"), false);
   }
 
   // ---------- 初始化 / Init ----------
@@ -724,8 +734,8 @@
     applyTheme();
     renderProfile();
     renderSocials();
+    applyI18n();      // 先设置界面语言, renderFooter 会用当前语言生成按钮文案
     renderFooter();
-    applyI18n();
 
     document.getElementById("saveContact").addEventListener("click", downloadVCF);
 

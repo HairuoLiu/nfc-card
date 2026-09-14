@@ -165,8 +165,6 @@
         <h2 data-i18n="sec6">⑥ 底部 Footer</h2>
         <div class="check"><input type="checkbox" id="f_show_phone" /><span data-i18n="labelShowPhone">公开显示电话</span></div>
         <div class="check"><input type="checkbox" id="f_show_email" /><span data-i18n="labelShowEmail">公开显示邮箱</span></div>
-        <label data-i18n="labelShareText">分享按钮文案</label>
-        <input type="text" id="f_share_text" />
       </div>
 
       <div class="btn-row">
@@ -232,7 +230,7 @@ const I18N = {
     labelFirst: "名 First", labelLast: "姓 Last", labelOrg: "公司 Org",
     labelJobTitle: "职位 Title", labelPhone: "电话 Phone", labelEmail: "邮箱 Email", labelWebsite: "网站 Website",
     addSocial: "+ 添加社交按钮",
-    labelShowPhone: "公开显示电话", labelShowEmail: "公开显示邮箱", labelShareText: "分享按钮文案",
+    labelShowPhone: "公开显示电话", labelShowEmail: "公开显示邮箱",
     genBtn: "⚙️ 生成 config.js", resetBtn: "↺ 重置为当前配置",
     previewHint: "↑ 实时预览。改完表单这里会立刻更新。",
     modalTitle: "✅ 配置已生成",
@@ -261,7 +259,7 @@ const I18N = {
     labelFirst: "First name", labelLast: "Last name", labelOrg: "Organization",
     labelJobTitle: "Job title", labelPhone: "Phone", labelEmail: "Email", labelWebsite: "Website",
     addSocial: "+ Add social button",
-    labelShowPhone: "Show phone publicly", labelShowEmail: "Show email publicly", labelShareText: "Share button text",
+    labelShowPhone: "Show phone publicly", labelShowEmail: "Show email publicly",
     genBtn: "⚙️ Generate config.js", resetBtn: "↺ Reset to current config",
     previewHint: "↑ Live preview. Updates as you type.",
     modalTitle: "✅ Config generated",
@@ -280,7 +278,7 @@ const I18N = {
 // 含 HTML 的文案用 innerHTML, 其余用 textContent
 const I18N_HTML_KEYS = ["sub", "modalDesc"];
 
-let LANG = localStorage.getItem("nfc_card_lang");
+let LANG = lsGet("nfc_card_lang");
 if (LANG !== "zh" && LANG !== "en") {
   // 编辑器默认英文 (国际化优先); 名片页 index.html 会按浏览器语言自动判断
   LANG = "en";
@@ -302,8 +300,18 @@ function applyI18n() {
 
 function setLang(lang) {
   LANG = lang;
-  localStorage.setItem("nfc_card_lang", lang);
+  lsSet("nfc_card_lang", lang);
   applyI18n();
+}
+
+// localStorage 安全包装 (隐私模式等极端环境不抛异常)
+function lsGet(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+function lsSet(key, val) { try { localStorage.setItem(key, val); } catch (e) { /* ignore */ } }
+
+// HTML 属性转义: 用户输入含引号/< 时防止破坏编辑器 UI (self-XSS / 属性逃逸)
+function escapeHtml(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 const SOCIAL_ICONS = {
@@ -314,11 +322,16 @@ const SOCIAL_ICONS = {
 const PLATFORMS = ["linkedin","wechat","instagram","facebook","twitter","github","youtube","mail","phone","website"];
 
 let cfg = (window.CARD_CONFIG && typeof window.CARD_CONFIG==="object") ? JSON.parse(JSON.stringify(window.CARD_CONFIG))
-  : { name:"Your Name", title:"Your Title", bio:"Line one | Line two", avatar:{type:"text",imageUrl:"",text:"YN"},
+  : { name:"Your Name", title:"Your Title", bio:"Line one | Line two | Line three", avatar:{type:"text",imageUrl:"",text:"YN"},
       theme:{gradientStart:"#0d0d0d",gradientEnd:"#2a2300",accent:"#FFB800"},
-      contact:{firstName:"",lastName:"",organization:"",title:"",phone:"",email:"",website:"",address:{}},
-      socials:[{platform:"linkedin",url:"#",label:"LinkedIn"},{platform:"wechat",wechatId:"",qrImage:"",label:"WeChat"}],
-      footer:{showPhone:false,showEmail:true,shareText:"Share this card"} };
+      contact:{firstName:"Your",lastName:"Name",organization:"",title:"",phone:"",email:"",website:"",address:{}},
+      socials:[
+        {platform:"linkedin", url:"#", label:"LinkedIn"},
+        {platform:"wechat", wechatId:"", qrImage:"", label:"WeChat"},
+        {platform:"instagram", url:"#", label:"Instagram"},
+        {platform:"facebook", url:"#", label:"Facebook"}
+      ],
+      footer:{showPhone:false,showEmail:true} };
 
 function showToast(m){ const t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("show"),2000); }
 function hex(c){ return (c&&c[0]==="#")?c:"#000000"; }
@@ -340,8 +353,7 @@ function loadForm(){
   $("f_c_phone").value=c.phone||""; $("f_c_email").value=c.email||""; $("f_c_web").value=c.website||"";
   $("f_show_phone").checked=!!cfg.footer?.showPhone;
   $("f_show_email").checked=!!cfg.footer?.showEmail;
-  $("f_share_text").value=cfg.footer?.shareText||"";
-  renderSocials();
+  // 注意: renderSocials 由 applyI18n() 统一调用 (含语言切换时刷新占位文案), 此处不再重复调用
   updatePreview();
 }
 
@@ -356,14 +368,14 @@ function renderSocials(){
         <select data-i="${idx}" class="s-platform">
           ${PLATFORMS.map(p=>`<option value="${p}" ${p===s.platform?"selected":""}>${p}</option>`).join("")}
         </select>
-        <input type="text" class="s-label" data-i="${idx}" value="${s.label||""}" placeholder="${t("phLabel")}" />
+        <input type="text" class="s-label" data-i="${idx}" value="${escapeHtml(s.label||"")}" placeholder="${t("phLabel")}" />
         <button class="btn ghost sm s-del" data-i="${idx}">✕</button>
       </div>
       ${isWechat ? `
-        <input type="text" class="s-wechatid" data-i="${idx}" value="${s.wechatId||""}" placeholder="${t("phWechatId")}" style="margin-top:8px;" />
-        <input type="text" class="s-qr" data-i="${idx}" value="${s.qrImage||""}" placeholder="${t("phQr")}" style="margin-top:8px;" />
+        <input type="text" class="s-wechatid" data-i="${idx}" value="${escapeHtml(s.wechatId||"")}" placeholder="${t("phWechatId")}" style="margin-top:8px;" />
+        <input type="text" class="s-qr" data-i="${idx}" value="${escapeHtml(s.qrImage||"")}" placeholder="${t("phQr")}" style="margin-top:8px;" />
       ` : `
-        <input type="url" class="s-url" data-i="${idx}" value="${s.url||""}" placeholder="${t("phUrl")}" style="margin-top:8px;" />
+        <input type="url" class="s-url" data-i="${idx}" value="${escapeHtml(s.url||"")}" placeholder="${t("phUrl")}" style="margin-top:8px;" />
       `}
     `;
     box.appendChild(row);
@@ -390,12 +402,15 @@ function readForm(){
   cfg.contact={
     firstName:$("f_c_first").value, lastName:$("f_c_last").value, organization:$("f_c_org").value,
     title:$("f_c_title").value, phone:$("f_c_phone").value, email:$("f_c_email").value,
-    website:$("f_c_web").value, address:{}
+    website:$("f_c_web").value,
+    // 保留用户 config.js 里已有的 address (编辑器表单未覆盖该字段, 导出时不能静默丢数据)
+    address:(cfg.contact && cfg.contact.address) || {}
   };
-  cfg.footer={ showPhone:$("f_show_phone").checked, showEmail:$("f_show_email").checked, shareText:$("f_share_text").value };
+  cfg.footer={ showPhone:$("f_show_phone").checked, showEmail:$("f_show_email").checked };
 }
 
 /* ---------- 实时预览 ---------- */
+let lastAvatarKey = null;   // 缓存: 头像未变化时不重建 <img> (避免每次 keystroke 重新解码/闪烁)
 function updatePreview(){
   readForm();
   const g=cfg.theme;
@@ -403,9 +418,14 @@ function updatePreview(){
   pv.style.background=`linear-gradient(135deg, ${g.gradientStart}, ${g.gradientEnd})`;
   pv.style.borderColor=g.accent+"55";
   const av=$("pv_avatar"); av.style.background=g.accent; av.style.color=g.gradientStart;
-  if(cfg.avatar.type==="image" && cfg.avatar.imageUrl){
-    av.innerHTML=`<img src="${cfg.avatar.imageUrl}" alt="">`;
-  } else { av.textContent=cfg.avatar.text||(cfg.name||"Y").charAt(0); }
+  const avatarKey = cfg.avatar.type+"|"+cfg.avatar.imageUrl+"|"+cfg.avatar.text+"|"+cfg.name;
+  if (avatarKey !== lastAvatarKey) {
+    lastAvatarKey = avatarKey;
+    if(cfg.avatar.type==="image" && cfg.avatar.imageUrl){
+      const img=document.createElement("img"); img.src=cfg.avatar.imageUrl; img.alt="";
+      av.innerHTML=""; av.appendChild(img);
+    } else { av.textContent=cfg.avatar.text||(cfg.name||"Y").charAt(0); }
+  }
   $("pv_name").textContent=cfg.name||"Your Name";
   $("pv_title").textContent=cfg.title||"";
   const bioEl=$("pv_bio"); bioEl.innerHTML="";
@@ -419,10 +439,11 @@ function updatePreview(){
   });
 }
 
-/* 表单任意输入 -> 预览 */
+/* 表单任意输入 -> 预览 (文本类 input 用 input 即时更新; select/checkbox/color 用 change) */
 document.querySelectorAll("input,textarea,select").forEach(el=>{
   if(el.closest(".social-row")) return;
-  el.addEventListener("input",updatePreview); el.addEventListener("change",updatePreview);
+  const ev = (el.tagName==="SELECT" || el.type==="checkbox" || el.type==="color") ? "change" : "input";
+  el.addEventListener(ev,updatePreview);
 });
 
 /* ---------- 生成 config.js 文本 ---------- */
@@ -458,7 +479,7 @@ window.CARD_CONFIG = {
     phone:       ${j(cfg.contact.phone)},
     email:       ${j(cfg.contact.email)},
     website:     ${j(cfg.contact.website)},
-    address: {}
+    address:     ${JSON.stringify(cfg.contact.address || {})}
   },
 
   socials: [
@@ -467,8 +488,7 @@ ${socials}
 
   footer: {
     showPhone: ${cfg.footer.showPhone},
-    showEmail: ${cfg.footer.showEmail},
-    shareText: ${j(cfg.footer.shareText)}
+    showEmail: ${cfg.footer.showEmail}
   }
 };
 `;
@@ -476,19 +496,22 @@ ${socials}
 function j(v){ return JSON.stringify(v===undefined?"":v); }
 
 /* ---------- 弹层 / 下载 / 复制 ---------- */
-$("gen_btn").onclick=()=>{ readForm(); const code=buildConfigJS(); $("codeOut").textContent=code; $("codeModal").classList.add("show"); window._code=code; };
+let lastCode = "";   // 最近一次生成的 config.js 文本 (替代 window._code 全局)
+$("gen_btn").onclick=()=>{ readForm(); lastCode=buildConfigJS(); $("codeOut").textContent=lastCode; $("codeModal").classList.add("show"); };
 $("close_btn").onclick=()=>$("codeModal").classList.remove("show");
 $("codeModal").addEventListener("click",e=>{ if(e.target===$("codeModal")) $("codeModal").classList.remove("show"); });
 $("download_btn").onclick=()=>{
-  const blob=new Blob([window._code],{type:"application/javascript"});
-  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="config.js"; a.click();
+  const blob=new Blob([lastCode],{type:"application/javascript"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download="config.js"; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);   // 延迟释放, 避免泄漏 & Safari 下载兼容
   showToast(t("toastDownloaded"));
 };
 $("copy_btn").onclick=async()=>{
-  try{ await navigator.clipboard.writeText(window._code); showToast(t("toastCopied")); }
+  try{ await navigator.clipboard.writeText(lastCode); showToast(t("toastCopied")); }
   catch(e){ showToast(t("toastCopyFail")); }
 };
-$("reset_btn").onclick=()=>{ loadForm(); showToast(t("toastReset")); };
+$("reset_btn").onclick=()=>{ loadForm(); renderSocials(); showToast(t("toastReset")); };
 
 /* 语言切换 / Language toggle */
 $("langToggle").onclick=()=>setLang(LANG==="zh"?"en":"zh");

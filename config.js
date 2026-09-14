@@ -14,7 +14,7 @@
      contact   -> 通讯录信息 (用于"保存到通讯录"导出的 .vcf)
      socials   -> 社交按钮 (platform 可选: linkedin/wechat/instagram/facebook/
                   twitter/github/youtube/mail/phone/website)
-     footer    -> 底部显示选项 + 分享按钮文案
+     footer    -> 底部显示选项 (是否公开显示电话/邮箱)
 
    提示 Tips:
      - 字符串用双引号 "..." 包住, 结尾加英文逗号 ,
@@ -73,7 +73,6 @@ window.CARD_CONFIG = {
   // ===== 底部联系方式 / Footer =====
   footer: {
     showPhone: false,  // 不在页面公开显示号码 (仅保留在"保存到通讯录"的 vCard 中)
-    showEmail: true,   // 是否在底部显示邮箱行 (email 为空时不显示)
-    shareText: "分享此名片 · Share this card"  // 分享按钮文案
+    showEmail: true    // 是否在底部显示邮箱行 (email 为空时不显示)
   }
 };

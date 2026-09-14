@@ -51,7 +51,7 @@ config.js  ──(defines window.CARD_CONFIG)──▶  index.html  ──▶  r
 | `theme` | object | Color tokens (see 2.3). |
 | `contact` | object | Contact details used to build the vCard `.vcf` (see 2.4). |
 | `socials` | array | List of social/platform buttons (see 2.5). |
-| `footer` | object | Footer visibility + share button text (see 2.6). |
+| `footer` | object | Footer visibility toggles (see 2.6). |
 
 ### 2.2 `avatar` — `{ type, imageUrl, text }`
 
@@ -100,13 +100,14 @@ Each entry is one button.
 | `qrImage` | string *(optional)* | QR-code image URL shown in the WeChat modal. |
 | `label` | string | Human-readable name / aria-label for the button. |
 
-### 2.6 `footer` — `{ showPhone, showEmail, shareText }`
+### 2.6 `footer` — `{ showPhone, showEmail }`
 
 | Field | Type | Meaning |
 |-------|------|---------|
 | `showPhone` | boolean | Whether to publicly display the phone row in the footer. (Phone is **always** included in the vCard regardless.) |
 | `showEmail` | boolean | Whether to display the email row (only shown if `contact.email` is non-empty). |
-| `shareText` | string | Text label for the share button. |
+
+> Share-button labels are built-in UI strings handled by the page's i18n (EN/中文) — they are not configurable via `footer`.
 
 ---
 
