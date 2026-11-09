@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  nfc-card / maker  ·  3DREAM Ultimate NFC Keychain Configurator (reference hub)
+  ----------------------------------------------------------------------------
+  Standalone single file: HTML + inline CSS + inline JS. No build step, no CDN,
+  no external dependency. This page only ADDS files under /maker/. It never
+  reads or changes ../index.html, ../config.js, ../editor.html or /start/.
+
+  The .scad file next to this page is served BYTE-FOR-BYTE as authored. GitHub
+  Pages cannot execute OpenSCAD; the real generator is MakerWorld's Parametric
+  Model Maker, which runs OpenSCAD on its own servers and exports a printable
+  3MF. This page therefore hosts, documents and links out - it does not rebuild
+  the Customizer. That is what keeps the source lossless.
+  ============================================================================
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>3DREAM NFC Keychain · Maker lab</title>
+  <meta name="description" content="Download the original 3DREAM OpenSCAD NFC keychain configurator, look up every parameter, and open MakerWorld Parametric Model Maker to generate your own version." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="3DREAM NFC Keychain · Maker lab" />
+  <meta property="og:description" content="Original unmodified .scad, a full parameter reference, and a guided path to generating your own NFC keychain." />
+  <meta name="theme-color" content="#0d0d0d" />
+  <meta name="color-scheme" content="dark" />
+
+  <style>
+    :root {
+      --g1:#0d0d0d; --g2:#2a2300; --accent:#FFB800;
+      --glass:rgba(255,255,255,.05);
+      --border:rgba(255,255,255,.18);
+      --text:rgba(255,255,255,.96);
+      --dim:rgba(255,255,255,.72);
+      --faint:rgba(255,255,255,.50);
+      --ok:#4ADE80; --warn:#FFB800;
+      --radius:22px;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    html { background:var(--g2); overscroll-behavior-y:none; }
+    body {
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+      background:linear-gradient(160deg,var(--g1),var(--g2));
+      color:var(--text); font-size:16px; line-height:1.55;
+      min-height:100vh; min-height:100dvh;
+      padding:0 16px calc(40px + env(safe-area-inset-bottom));
+    }
+    .wrap { max-width:560px; margin:0 auto; }
+    a { color:var(--accent); }
+    [hidden] { display:none !important; }
+    code, .mono { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px; }
+
+    /* ---- sticky progress ---- */
+    .progress {
+      position:sticky; top:0; z-index:30;
+      background:rgba(13,13,13,.90);
+      backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+      border-bottom:1px solid rgba(255,255,255,.08);
+      padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
+      margin:0 -16px 4px;
+    }
+    .progress-in { max-width:560px; margin:0 auto; display:flex; align-items:center; gap:12px; }
+    .p-label { font-size:11px; letter-spacing:.14em; color:var(--dim); font-weight:800; white-space:nowrap; }
+    .p-label b { color:var(--accent); }
+    .dots { display:flex; gap:6px; flex:1; min-width:0; }
+    .dot {
+      height:6px; flex:1; border-radius:99px; border:0; padding:0; cursor:pointer;
+      background:rgba(255,255,255,.14); transition:background .3s ease;
+    }
+    .dot.done { background:var(--accent); }
+    .dot.now  { background:rgba(255,184,0,.55); }
+    .p-name { font-size:12px; color:var(--faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:38%; }
+    @media (max-width:420px) { .p-name { display:none; } }
+
+    /* ---- hero ---- */
+    .hero { padding:28px 2px 22px; }
+    .badge {
+      display:inline-flex; align-items:center; gap:7px; font-size:11px; letter-spacing:.16em; font-weight:800;
+      color:var(--accent); border:1px solid rgba(255,184,0,.35); background:rgba(255,184,0,.07);
+      padding:6px 12px; border-radius:99px;
+    }
+    h1 { font-size:clamp(26px,7.4vw,36px); line-height:1.18; letter-spacing:-.02em; margin:16px 0 10px; }
+    .lede { color:var(--dim); font-size:16px; }
+    .meta { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+    .chip { font-size:12px; color:var(--dim); background:rgba(255,255,255,.06); border:1px solid var(--border); padding:5px 10px; border-radius:99px; }
+
+    /* ---- generic panels ---- */
+    .panel, .step, .notice {
+      background:var(--glass); border:1px solid var(--border); border-radius:var(--radius);
+      padding:22px 18px; margin-bottom:16px;
+      backdrop-filter:blur(14px) saturate(160%); -webkit-backdrop-filter:blur(14px) saturate(160%);
+    }
+    .panel { scroll-margin-top:76px; }
+    .panel h2 { font-size:19px; line-height:1.3; letter-spacing:-.01em; margin-bottom:10px; }
+    .panel h3 { font-size:14px; margin:18px 0 6px; color:var(--accent); }
+    .panel p, .notice p, .step p { font-size:14px; color:var(--text); }
+    .panel p + p, .notice p + p, .step p + p { margin-top:10px; }
+    .muted { color:var(--dim) !important; }
+    .small { font-size:12px !important; color:var(--faint) !important; }
+    ul.list { margin:10px 0 0 18px; }
+    ul.list li { font-size:14px; margin-bottom:7px; }
+
+    /* ---- why callout ---- */
+    .notice { border-color:rgba(255,184,0,.30); background:rgba(255,184,0,.055); }
+    .notice h2 { font-size:15px; color:var(--accent); margin-bottom:8px; letter-spacing:.02em; }
+    .notice p, .notice li { font-size:13px; color:var(--dim); }
+
+    /* ---- step shell ---- */
+    .step { scroll-margin-top:76px; transition:border-color .3s ease, box-shadow .3s ease; }
+    .step[data-state="active"] { border-color:rgba(255,184,0,.45); box-shadow:0 0 0 1px rgba(255,184,0,.10),0 18px 40px rgba(13,13,13,.30); }
+    .step-head { display:flex; align-items:flex-start; gap:12px; margin-bottom:16px; }
+    .num {
+      flex:0 0 32px; height:32px; border-radius:50%; display:grid; place-items:center;
+      font-weight:800; font-size:15px; background:rgba(255,184,0,.14); color:var(--accent);
+      border:1px solid rgba(255,184,0,.40);
+    }
+    .step-head h2 { font-size:19px; line-height:1.3; letter-spacing:-.01em; }
+    .step-head .sub { font-size:13px; color:var(--dim); margin-top:3px; }
+    .cue { border-radius:14px; padding:12px 14px; margin-bottom:14px; border:1px solid transparent; }
+    .cue h3 { font-size:10px; letter-spacing:.14em; font-weight:800; margin:0 0 5px; }
+    .cue p  { font-size:14px; line-height:1.55; color:var(--text); }
+    .cue.do  { background:rgba(255,184,0,.08); border-color:rgba(255,184,0,.22); }
+    .cue.do h3 { color:var(--accent); }
+    .cue.see { background:rgba(255,255,255,.045); border-color:var(--border); margin:16px 0 0; }
+    .cue.see h3 { color:var(--dim); }
+
+    /* ---- buttons & links ---- */
+    .btn {
+      display:inline-flex; align-items:center; justify-content:center; gap:9px; text-align:center;
+      min-height:52px; width:100%; border:0; border-radius:14px; text-decoration:none;
+      font-size:15px; font-weight:800; font-family:inherit; cursor:pointer;
+      background:var(--accent); color:#0d0d0d; padding:12px 14px; margin-top:12px;
+      transition:transform .15s ease, filter .2s ease;
+    }
+    .btn:active { transform:scale(.985); }
+    .btn.sec { background:rgba(255,255,255,.08); color:var(--text); border:1px solid var(--border); }
+    .btn.sm { min-height:46px; font-size:13px; margin-top:0; }
+    .btnrow { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+    .btnrow .btn { margin-top:0; }
+    @media (max-width:420px) { .btnrow { grid-template-columns:1fr; } }
+    .btn:focus-visible, .dot:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visible {
+      outline:2px solid var(--accent); outline-offset:2px;
+    }
+
+    /* ---- integrity box ---- */
+    .verify { margin-top:14px; border:1px dashed var(--border); border-radius:12px; padding:0 12px; }
+    .verify summary { cursor:pointer; min-height:48px; display:flex; align-items:center; font-size:13px; font-weight:700; color:var(--dim); }
+    .verify-body { padding-bottom:14px; }
+    .hash { word-break:break-all; font-size:11px; color:var(--ok); line-height:1.5; }
+
+    /* ---- tables / reference ---- */
+    .filter {
+      width:100%; min-height:48px; font-size:16px; font-family:inherit;
+      background:rgba(0,0,0,.28); border:1px solid var(--border); border-radius:12px;
+      color:var(--text); padding:11px 14px; margin:6px 0 8px; outline:none;
+    }
+    .filter::placeholder { color:rgba(255,255,255,.35); }
+    .filter:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(255,184,0,.14); }
+    .count { font-size:12px; color:var(--faint); margin-bottom:12px; }
+    .grp { border:1px solid var(--border); border-radius:14px; margin-bottom:10px; overflow:hidden; }
+    .grp summary {
+      cursor:pointer; padding:13px 14px; min-height:48px; display:flex; align-items:center; gap:10px;
+      font-size:14px; font-weight:800; background:rgba(255,255,255,.045); list-style:none;
+    }
+    .grp summary::-webkit-details-marker { display:none; }
+    .grp summary::before { content:"+"; color:var(--accent); font-weight:800; font-size:16px; }
+    .grp[open] summary::before { content:"−"; }
+    .grp summary .n { margin-left:auto; font-size:11px; font-weight:500; color:var(--faint); }
+    .tw { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    table { width:100%; border-collapse:collapse; min-width:440px; }
+    th, td { text-align:left; vertical-align:top; padding:10px 12px; border-top:1px solid rgba(255,255,255,.08); font-size:12.5px; line-height:1.5; }
+    th { color:var(--faint); font-size:10px; letter-spacing:.12em; text-transform:uppercase; font-weight:800; }
+    td:first-child { color:var(--accent); white-space:nowrap; }
+    td.dv { color:var(--dim); white-space:nowrap; }
+    td.dv b { display:block; color:var(--text); font-weight:700; }
+    td.wh { color:var(--dim); }
+
+    /* ---- prompt ---- */
+    pre.src {
+      background:rgba(0,0,0,.34); border:1px solid var(--border); border-radius:12px;
+      padding:14px; overflow-x:auto; -webkit-overflow-scrolling:touch;
+      color:var(--dim); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:11.5px; line-height:1.6; white-space:pre; margin-top:12px;
+    }
+
+    /* ---- faq ---- */
+    .faq details { border:1px solid var(--border); border-radius:12px; padding:0 14px; margin-bottom:9px; }
+    .faq summary { cursor:pointer; min-height:48px; display:flex; align-items:center; font-size:14px; font-weight:700; }
+    .faq .a { padding-bottom:14px; font-size:13.5px; color:var(--dim); }
+    .faq .a + .a { padding-top:0; }
+
+    /* ---- footer ---- */
+    .foot { padding:18px 2px 8px; font-size:12px; color:var(--faint); line-height:1.7; }
+    .foot a { color:var(--dim); }
+    .foot .sep { margin:0 7px; opacity:.5; }
+
+    @media (prefers-reduced-motion:reduce) {
+      * { animation-duration:.01ms !important; transition-duration:.01ms !important; scroll-behavior:auto !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="progress">
+    <div class="progress-in">
+      <span class="p-label">STEP <b id="pNum">1</b>/4</span>
+      <div class="dots" id="dots">
+        <button class="dot now" type="button" data-go="s1" aria-label="Go to step 1"></button>
+        <button class="dot" type="button" data-go="s2" aria-label="Go to step 2"></button>
+        <button class="dot" type="button" data-go="s3" aria-label="Go to step 3"></button>
+        <button class="dot" type="button" data-go="s4" aria-label="Go to step 4"></button>
+      </div>
+      <span class="p-name" id="pName">Get the files</span>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <header class="hero">
+      <span class="badge">OPENSCAD &nbsp;·&nbsp; MAKER LAB</span>
+      <h1>Build your own NFC keychain</h1>
+      <p class="lede">This page hosts the original 3DREAM Ultimate NFC Keychain Configurator, explains every parameter, and sends you to the generator that actually runs it.</p>
+      <div class="meta">
+        <span class="chip">339 lines</span>
+        <span class="chip">11,770 bytes</span>
+        <span class="chip">Source unchanged</span>
+        <span class="chip">No install required</span>
+      </div>
+    </header>
+
+    <section class="notice">
+      <h2>Why there are no sliders on this page</h2>
+      <p>The configurator is an <code>.scad</code> script, not a web app. GitHub Pages only serves files; it cannot run an OpenSCAD kernel. The sliders, dropdowns and SVG upload fields you know are created by MakerWorld's Parametric Model Maker from special comments such as <code>// [20:0.5:100]</code> and <code>// @type: file</code>. A browser treats those as ordinary comments.</p>
+      <p>So this page does the lossless thing: it stores the script byte-for-byte, documents it, and links out to the real generator. Rebuilding the Customizer in the browser would mean rewriting the UI, bundling roughly 19 MB of WebAssembly, and losing the platform's font, colour and 3MF multi-material behaviour.</p>
+    </section>
+
+    <!-- ===================== STEP 1 ===================== -->
+    <section class="step" id="s1" data-step="1" data-name="Get the files">
+      <div class="step-head">
+        <div class="num">1</div>
+        <div>
+          <h2>Get the source files</h2>
+          <div class="sub">Two small files, straight from this repository</div>
+        </div>
+      </div>
+
+      <div class="cue do">
+        <h3>DO THIS NOW</h3>
+        <p>Download both files below. The <code>.scad</code> is the configurator itself, exactly as written. The <code>.svg</code> is a minimal placeholder graphic the script needs in order to render.</p>
+      </div>
+
+      <div class="btnrow">
+        <a class="btn" href="./3dream-nfc-keychain.scad" download="3dream-nfc-keychain.scad">Download .scad</a>
+        <a class="btn sec" href="./default.svg" download="default.svg">Download default.svg</a>
+      </div>
+
+      <div class="cue see">
+        <h3>WHEN IT'S DONE, YOU'LL SEE</h3>
+        <p>Two files in your Downloads folder. Open the <code>.scad</code> in any text editor and the first line reads <code>// --- 3DREAM Ultimate NFC Keychain Configurator ---</code>. Nothing has been reformatted, renamed or optimised.</p>
+      </div>
+
+      <details class="verify">
+        <summary>Verify the source is byte-for-byte</summary>
+        <div class="verify-body">
+          <p class="small">This reads the file served by GitHub Pages and computes its fingerprint in your browser. Nothing is uploaded.</p>
+          <p class="hash" id="hashOut">Calculating…</p>
+          <button class="btn sec sm" type="button" id="copyHash">Copy fingerprint</button>
+        </div>
+      </details>
+    </section>
+
+    <!-- ===================== STEP 2 ===================== -->
+    <section class="step" id="s2" data-step="2" data-name="Open the generator">
+      <div class="step-head">
+        <div class="num">2</div>
+        <div>
+          <h2>Open Parametric Model Maker</h2>
+          <div class="sub">MakerWorld runs OpenSCAD on its own servers</div>
+        </div>
+      </div>
+
+      <div class="cue do">
+        <h3>DO THIS NOW</h3>
+        <p>Open the generator below, sign in with a MakerWorld account, and open the <code>.scad</code> you just downloaded. If you are publishing a model listing instead, upload the <code>.scad</code> as the model file — MakerWorld detects it and adds the <em>Customize</em> button automatically.</p>
+      </div>
+
+      <a class="btn" href="https://makerworld.com/en/makerlab/parametricModelMaker" target="_blank" rel="noopener noreferrer">Open Parametric Model Maker ↗</a>
+      <a class="btn sec" href="https://makerworld.com/en/community/post/193546" target="_blank" rel="noopener noreferrer">Read the Customizer guide ↗</a>
+
+      <div class="cue see">
+        <h3>WHEN IT'S DONE, YOU'LL SEE</h3>
+        <p>A form with nine groups — <code>[1. Main Body Settings]</code> through <code>[9. Back Texts]</code> — plus sliders, dropdowns, colour pickers, two SVG upload fields, and a live 3D preview. No local OpenSCAD install is needed.</p>
+      </div>
+      <p class="small" style="margin-top:12px">Prefer working offline? Install <a href="https://openscad.org/" target="_blank" rel="noopener noreferrer">OpenSCAD</a> (the 2021 stable release is the safest match) and open the file there. You will need the listed fonts installed locally, and you must place <code>default.svg</code> next to the script.</p>
+    </section>
+
+    <!-- ===================== STEP 3 ===================== -->
+    <section class="step" id="s3" data-step="3" data-name="Set parameters">
+      <div class="step-head">
+        <div class="num">3</div>
+        <div>
+          <h2>Set your parameters</h2>
+          <div class="sub">Use the quick reference further down this page</div>
+        </div>
+      </div>
+
+      <div class="cue do">
+        <h3>DO THIS NOW</h3>
+        <p>Set the body size and shape, match the NFC cavity to your inlay, choose an attachment style, then upload your front and back SVGs and fill in the text lines you want. Use the <a href="#ref">parameter reference</a> below to look up any variable.</p>
+      </div>
+
+      <div class="tw" style="margin-top:14px">
+        <table>
+          <thead><tr><th>Tag</th><th>NFC_Shape</th><th>NFC_Size</th><th>Roof</th></tr></thead>
+          <tbody>
+            <tr><td>Round NTAG213 / NTAG215</td><td class="dv"><b>Round</b>25 mm</td><td class="dv"><b>25</b>1.2 mm thick</td><td class="wh">1.0 mm</td></tr>
+            <tr><td>Square sticker inlay</td><td class="dv"><b>Square</b>25 × 25 mm</td><td class="dv"><b>25</b>1.2 mm thick</td><td class="wh">1.0 mm</td></tr>
+            <tr><td>Larger 30 mm inlay</td><td class="dv"><b>Round</b>30 mm</td><td class="dv"><b>30</b>1.2 mm thick</td><td class="wh">1.0 mm</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small" style="margin-top:10px">Keep <code>Top_Layer_Thickness</code> at 0.8 mm or more — a thick roof hurts read range. Both <code>FSVG_Scale</code> and <code>BSVG_Scale</code> default to 0.15, so a 40-unit SVG becomes about 6 mm wide.</p>
+
+      <div class="cue see">
+        <h3>WHEN IT'S DONE, YOU'LL SEE</h3>
+        <p>The live preview redraws with your geometry, engraving and embossing. You can then download a printable 3MF (and usually an STL). Colors are carried in the platform's 3MF flow — see the FAQ about why STL has no colour.</p>
+      </div>
+    </section>
+
+    <!-- ===================== STEP 4 ===================== -->
+    <section class="step" id="s4" data-step="4" data-name="Print and write">
+      <div class="step-head">
+        <div class="num">4</div>
+        <div>
+          <h2>Print it and write the tag</h2>
+          <div class="sub">Pause the print to drop the inlay into the cavity</div>
+        </div>
+      </div>
+
+      <div class="cue do">
+        <h3>DO THIS NOW</h3>
+        <p>Slice the exported 3MF and add a pause at the layer just before the roof closes over the NFC cavity. Drop the inlay in, resume the print, then write your public URL to the tag with NFC Tools on your phone.</p>
+      </div>
+
+      <a class="btn sec" href="../start/" target="_blank" rel="noopener noreferrer">Open the NFC tap setup guide ↗</a>
+
+      <div class="cue see">
+        <h3>WHEN IT'S DONE, YOU'LL SEE</h3>
+        <p>A solid keychain with the tag sealed inside. Tap it with a phone and your card or link opens — no app on the phone required.</p>
+      </div>
+    </section>
+
+    <!-- ===================== PARAMETER REFERENCE ===================== -->
+    <section class="panel" id="ref">
+      <h2>Parameter quick reference</h2>
+      <p class="muted">Every variable exposed in the Customizer, grouped exactly as the script labels them. The <code>.scad</code> remains the source of truth.</p>
+      <input class="filter" id="filter" type="search" placeholder="Filter parameters, e.g. NFC, SVG, T1, font" aria-label="Filter parameters" />
+      <p class="count" id="count">Showing all parameters</p>
+
+      <details class="grp" open>
+        <summary>1 · Main body settings <span class="n">6</span></summary>
+        <div class="tw"><table><thead><tr><th>Parameter</th><th>Default · range</th><th>What it does</th></tr></thead><tbody>
+          <tr data-k="Shape_Type"><td>Shape_Type</td><td class="dv"><b>"Rectangle"</b>Round / Rectangle / Hexagon / Octagon</td><td class="wh">Outline of the keychain body.</td></tr>
+          <tr data-k="Base_Width"><td>Base_Width</td><td class="dv"><b>40 mm</b>20–100, step 0.5</td><td class="wh">Size along X.</td></tr>
+          <tr data-k="Base_Length"><td>Base_Length</td><td class="dv"><b>40 mm</b>20–100, step 0.5</td><td class="wh">Size along Y.</td></tr>
+          <tr data-k="Total_Thickness"><td>Total_Thickness</td><td class="dv"><b>6 mm</b>2–15, step 0.1</td><td class="wh">Overall thickness of the body.</td></tr>
+          <tr data-k="Corner_Radius"><td>Corner_Radius</td><td class="dv"><b>3 mm</b>0–15, step 0.5</td><td class="wh">Rounded corners; Rectangle only.</td></tr>
+          <tr data-k="Base_Color"><td>Base_Color</td><td class="dv"><b>"White"</b>11 named colors</td><td class="wh">Preview colour of the body. See FAQ.</td></tr>
+        </tbody></table></div>
+      </details>
+
+      <details class="grp" open>
+        <summary>2 · NFC cavity control <span class="n">6</span></summary>
+        <div class="tw"><table><thead><tr><th>Parameter</th><th>Default · range</th><th>What it does</th></tr></thead><tbody>
+          <tr data-k="NFC_Shape"><td>NFC_Shape</td><td class="dv"><b>"Round"</b>Round / Square</td><td class="wh">Shape of the internal cavity.</td></tr>
+          <tr data-k="NFC_Size"><td>NFC_Size</td><td class="dv"><b>25 mm</b>10–50, step 0.5</td><td class="wh">Diameter (or side) of the inlay.</td></tr>
+          <tr data-k="NFC_Thickness"><td>NFC_Thickness</td><td class="dv"><b>1.2 mm</b>0.1–5, step 0.1</td><td class="wh">Thickness of the inlay cavity.</td></tr>
+          <tr data-k="NFC_X_Offset"><td>NFC_X_Offset</td><td class="dv"><b>0 mm</b>-30 to 30, step 0.5</td><td class="wh">Move the cavity left / right.</td></tr>
+          <tr data-k="NFC_Y_Offset"><td>NFC_Y_Offset</td><td class="dv"><b>0 mm</b>-30 to 30, step 0.5</td><td class="wh">Move the cavity up / down.</td></tr>
+          <tr data-k="Top_Layer_Thickness"><td>Top_Layer_Thickness</td><td class="dv"><b>1.0 mm</b>0.4–3, step 0.1</td><td class="wh">Roof above the tag. Keep at least 0.8 mm for reliable reads.</td></tr>
+        </tbody></table></div>
+      </details>
+
+      <details class="grp" open>
+        <summary>3 · Attachment &amp; hole placement <span class="n">7</span></summary>
+        <div class="tw"><table><thead><tr><th>Parameter</th><th>Default · range</th><th>What it does</th></tr></thead><tbody>
+          <tr data-k="Attachment_Type"><td>Attachment_Type</td><td class="dv"><b>"Internal_Hole"</b>4 options</td><td class="wh">Internal_Hole / Tab_with_Hole / Oval_Tab / None.</td></tr>
+          <tr data-k="Attachment_Pos"><td>Attachment_Pos</td><td class="dv"><b>"Top"</b>Top / Bottom / Left / Right</td><td class="wh">Which edge gets the ring.</td></tr>
+          <tr data-k="Attach_X_Offset"><td>Attach_X_Offset</td><td class="dv"><b>0 mm</b>-50 to 50, step 0.5</td><td class="wh">Shift the attachment along X.</td></tr>
+          <tr data-k="Attach_Y_Offset"><td>Attach_Y_Offset</td><td class="dv"><b>0 mm</b>-50 to 50, step 0.5</td><td class="wh">Shift the attachment along Y.</td></tr>
+          <tr data-k="Tab_Length"><td>Tab_Length</td><td class="dv"><b>10 mm</b>5–25, step 1</td><td class="wh">How far a protruding tab extends.</td></tr>
+          <tr data-k="Tab_Width"><td>Tab_Width</td><td class="dv"><b>15 mm</b>5–30, step 1</td><td class="wh">Width of the tab.</td></tr>
+          <tr data-k="Hole_Dia"><td>Hole_Dia</td><td class="dv"><b>5 mm</b>2–15, step 0.5</td><td class="wh">Diameter of the ring hole.</td></tr>
+        </tbody></table></div>
+      </details>
+
+      <details class="grp" open>
+        <summary>4 · Global typography <span class="n">2</span></summary>
+        <div class="tw"><table><thead><tr><th>Parameter</th><th>Default · range</th><th>What it does</th></tr></thead><tbody>
+          <tr data-k="Global_Font"><td>Global_Font</td><td class="dv"><b>"Arial:style=Bold"</b>5 options</td><td class="wh">Font for every text() call. Arial Bold / Regular, Courier New Bold, Times New Roman Bold, Impact.</td></tr>
+          <tr data-k="Text_Spacing"><td>Text_Spacing</td><td class="dv"><b>1.0</b>0.5–3.0, step 0.1</td><td class="wh">Letter spacing for all text lines.</td></tr>
+        </tbody></table></div>
+      </details>
+
+      <details class="grp" open>
+        <summary>5 · Global movement <span class="n">4</span></summary>
+        <div class="tw"><table><thead><tr><th>Parameter</th><th>Default · range</th><th>What it does</th></tr></thead><tbody>
+          <tr data-k="Global_Front_X"><td>Global_Front_X</td><td class="dv"><b>0 mm</b>-50 to 50</td><td class="wh">Shift all front elements along X.</td></tr>
+          <tr data-k="Global_Front_Y"><td>Global_Front_Y</td><td class="dv"><b>0 mm</b>-50 to 50</td><td class="wh">Shift all front elements along Y.</td></tr>
+          <tr data-k="Global_Back_X"><td>Global_Back_X</td><td class="dv"><b>0 mm</b>-50 to 50</td><td class="wh">Shift all back elements along X.</td></tr>
+          <tr data-k="Global_Back_Y"><td>Global_Back_Y</td><td class="dv"><b>0 mm</b>-50 to 50</td><td class="wh">Shift all back elements along Y.</td></tr>
+        </tbody></table></div>
+      </details>
+
+      <details class="grp" open>
+        <summary>6 + 7 · Front and back SVG graphics <span class="n">8 pairs</span></summary>
+        <div class="tw"><table><thead><tr><th>Parameter</th><th>Default · range</th><th>What it does</th></tr></thead><tbody>
+          <tr data-k="Front_SVG Back_SVG"><td>Front_SVG / Back_SVG</td><td class="dv"><b>"default.svg"</b>file upload</td><td class="wh">The SVG to engrave or emboss. Upload one through the Customizer file control before rendering.</td></tr>
+          <tr data-k="FSVG_Scale BSVG_Scale"><td>FSVG_Scale / BSVG_Scale</td><td class="dv"><b>0.15</b>0.01–5, step 0.01</td><td class="wh">Scale factor applied to the imported SVG.</td></tr>
+          <tr data-k="FSVG_X BSVG_X"><td>FSVG_X / BSVG_X</td><td class="dv"><b>0 mm</b>-50 to 50</td><td class="wh">Move the graphic left / right.</td></tr>
+          <tr data-k="FSVG_Y BSVG_Y"><td>FSVG_Y / BSVG_Y</td><td class="dv"><b>0 mm</b>-50 to 50</td><td class="wh">Move the graphic up / down.</td></tr>
+          <tr data-k="FSVG_Rot BSVG_Rot"><td>FSVG_Rot / BSVG_Rot</td><td class="dv"><b>0 deg</b>0–360</td><td class="wh">Rotation of the graphic.</td></tr>
+          <tr data-k="FSVG_Depth BSVG_Depth"><td>FSVG_Depth / BSVG_Depth</td><td class="dv"><b>0.5 mm</b>0–3, step 0.1</td><td class="wh">Engrave depth cut into the base. Set 0 to skip cutting.</td></tr>
+          <tr data-k="FSVG_Emboss BSVG_Emboss"><td>FSVG_Emboss / BSVG_Emboss</td><td class="dv"><b>0.5 mm</b>0–3, step 0.1</td><td class="wh">Emboss height extruded out of the base. Set 0 to skip embossing.</td></tr>
+          <tr data-k="FSVG_Color BSVG_Color"><td>FSVG_Color / BSVG_Color</td><td class="dv"><b>"Black"</b>11 named colors</td><td class="wh">Preview colour of the embossed graphic.</td></tr>
+        </tbody></table></div>
+      </details>
+
+      <details class="grp" open>
+        <summary>8 + 9 · Eight text lines <span class="n">T1–T8</span></summary>
+        <div class="tw"><table><thead><tr><th>Field</th><th>Default · range</th><th>What it does</th></tr></thead><tbody>
+          <tr data-k="Tn_Txt"><td>T<em>n</em>_Txt</td><td class="dv"><b>"" (empty)</b>any string</td><td class="wh">The text itself. Empty means the line is skipped entirely.</td></tr>
+          <tr data-k="Tn_X"><td>T<em>n</em>_X</td><td class="dv"><b>0 mm</b>-50 to 50</td><td class="wh">Horizontal position.</td></tr>
+          <tr data-k="Tn_Y"><td>T<em>n</em>_Y</td><td class="dv"><b>12 / 4 / -4 / -12</b>-50 to 50</td><td class="wh">Vertical position; pre-staggered into four rows.</td></tr>
+          <tr data-k="Tn_Size"><td>T<em>n</em>_Size</td><td class="dv"><b>5</b>1–20, step 0.5</td><td class="wh">Text height.</td></tr>
+          <tr data-k="Tn_Rot"><td>T<em>n</em>_Rot</td><td class="dv"><b>0 deg</b>0–360</td><td class="wh">Rotation.</td></tr>
+          <tr data-k="Tn_D"><td>T<em>n</em>_D</td><td class="dv"><b>0.5 mm</b>0–3, step 0.1</td><td class="wh">Engrave depth. 0 disables the cut.</td></tr>
+          <tr data-k="Tn_E"><td>T<em>n</em>_E</td><td class="dv"><b>0.5 mm</b>0–3, step 0.1</td><td class="wh">Emboss height. 0 disables the raised version.</td></tr>
+          <tr data-k="Tn_Col"><td>T<em>n</em>_Col</td><td class="dv"><b>"Black"</b>11 named colors</td><td class="wh">Preview colour of the embossed text.</td></tr>
+        </tbody></table></div>
+        <div class="tw"><table><thead><tr><th>Line</th><th>Side</th><th>Default Y</th></tr></thead><tbody>
+          <tr data-k="T1"><td>T1</td><td class="wh">Front</td><td class="dv"><b>12</b></td></tr>
+          <tr data-k="T2"><td>T2</td><td class="wh">Front</td><td class="dv"><b>4</b></td></tr>
+          <tr data-k="T3"><td>T3</td><td class="wh">Front</td><td class="dv"><b>-4</b></td></tr>
+          <tr data-k="T4"><td>T4</td><td class="wh">Front</td><td class="dv"><b>-12</b></td></tr>
+          <tr data-k="T5"><td>T5</td><td class="wh">Back</td><td class="dv"><b>12</b></td></tr>
+          <tr data-k="T6"><td>T6</td><td class="wh">Back</td><td class="dv"><b>4</b></td></tr>
+          <tr data-k="T7"><td>T7</td><td class="wh">Back</td><td class="dv"><b>-4</b></td></tr>
+          <tr data-k="T8"><td>T8</td><td class="wh">Back</td><td class="dv"><b>-12</b></td></tr>
+        </tbody></table></div>
+      </details>
+
+      <details class="grp">
+        <summary>Hidden · internal constant <span class="n">1</span></summary>
+        <div class="tw"><table><thead><tr><th>Parameter</th><th>Value</th><th>What it does</th></tr></thead><tbody>
+          <tr data-k="$fn hidden"><td>$fn</td><td class="dv"><b>100</b></td><td class="wh">Facet resolution. Hidden from the Customizer on purpose.</td></tr>
+        </tbody></table></div>
+      </details>
+
+      <p class="small" style="margin-top:12px">Ranges above are transcribed from the script's magic comments. If this page and the <code>.scad</code> ever disagree, the <code>.scad</code> wins.</p>
+    </section>
+
+    <!-- ===================== AI PROMPT ===================== -->
+    <section class="panel" id="prompt">
+      <h2>Ask an AI to customise the script</h2>
+      <p class="muted">Use this when you want a new shape, a different attachment, or an extra parameter added to the Customizer. Copy it into any AI assistant, then paste your request at the end.</p>
+      <pre class="src" id="promptText">ROLE
+You are editing one OpenSCAD file written for MakerWorld Parametric Model Maker:
+3dream-nfc-keychain.scad (3DREAM Ultimate NFC Keychain Configurator).
+
+HARD RULES
+1. Treat the file as read-only except for the exact change I ask for. Do not
+   reformat, reorder, rename or "clean up" anything else. Show me the exact
+   lines to replace plus a short diff.
+2. Keep every magic comment attached to its variable:
+   // [min:step:max], // [A,B,C], // [Label:Value], // font,
+   // @type: file, // @extension: svg, // @label: ...
+   MakerWorld parses these comments to build the Customizer UI. Changing them
+   silently breaks the sliders and the SVG upload fields.
+3. Keep /* [Hidden] */, every module definition and the final
+   union() / difference() assembly unchanged unless I explicitly ask for a
+   geometry change.
+4. Stay compatible with the OpenSCAD 2021 stable release. Do not use
+   development-snapshot-only features.
+5. Only fonts installed on MakerWorld are valid. The existing Global_Font
+   dropdown lists the supported ones. Do not invent a font name.
+6. STL has no color. color() only affects the preview and MakerWorld's 3MF
+   pipeline. Never promise that a color change will appear in an STL.
+7. Any import() file must be a simple SVG made of &lt;path&gt; elements using
+   M / L / Z / C / A commands. Avoid &lt;rect&gt;, &lt;circle&gt;, &lt;text&gt;, CSS and
+   external references.
+8. Never ask me for passwords, tokens, verification codes or any credential.
+
+CONTEXT
+- 9 parameter groups: Main Body, NFC Cavity, Attachment, Typography,
+  Global Movement, Front SVG, Back SVG, Front Texts, Back Texts.
+- 8 text lines: T1..T4 on the front, T5..T8 on the back. Each has
+  _Txt, _X, _Y, _Size, _Rot, _D (engrave), _E (emboss), _Col.
+- Front_SVG and Back_SVG default to "default.svg" and must be uploaded
+  through the Customizer's file control before the script can render.
+- element_cut() engraves, element_emboss() raises; both are called once per
+  front element and once per back element inside the final assembly.
+
+MY REQUEST
+&lt;describe exactly what you want changed, including parameter names and target
+values, and say whether you want a new control added to the Customizer&gt;
+
+BEFORE YOU ANSWER
+Ask one or two clarifying questions if anything is ambiguous. Then give me the
+minimal patch, tell me which Customizer controls will change, and list anything
+that could break the 3MF export.</pre>
+      <button class="btn" type="button" id="copyPrompt">Copy prompt</button>
+    </section>
+
+    <!-- ===================== ABOUT ===================== -->
+    <section class="panel" id="about">
+      <h2>About this page</h2>
+
+      <h3>What it is for</h3>
+      <p>It is a permanent home for the 3DREAM configurator source and a checklist for the day you want to print your own version of the NFC keychain. The script itself is unchanged — you download it and run it in the generator you already use. Nothing here depends on this page staying online except the documentation.</p>
+
+      <h3>Which prompt to use</h3>
+      <p>Use the copyable prompt above when you want the <em>script</em> changed: a new shape, a new attachment style, an extra parameter in the Customizer. Use the prompt in the <a href="../start/" target="_blank" rel="noopener noreferrer">NFC tap setup guide</a> when you want to publish a <em>web page</em> and write its URL to a tag. They solve different problems.</p>
+
+      <h3>How to get the software on your phone</h3>
+      <p>There is nothing to install for generating the model — open Parametric Model Maker in Safari or Chrome on your phone and sign in. For the tag itself, install <strong>NFC Tools</strong> from the App Store or Google Play, then use <code>Write → Add a record → URL</code>. If you also want to preview the geometry offline, install desktop OpenSCAD on a computer; the 2021 stable release matches MakerWorld best.</p>
+      <ul class="list">
+        <li><a href="https://apps.apple.com/us/search?term=NFC%20Tools" target="_blank" rel="noopener noreferrer">NFC Tools on the App Store ↗</a></li>
+        <li><a href="https://play.google.com/store/search?q=NFC%20Tools&amp;c=apps" target="_blank" rel="noopener noreferrer">NFC Tools on Google Play ↗</a></li>
+        <li><a href="https://openscad.org/" target="_blank" rel="noopener noreferrer">OpenSCAD desktop (optional) ↗</a></li>
+      </ul>
+    </section>
+
+    <!-- ===================== FAQ ===================== -->
+    <section class="panel faq" id="faq">
+      <h2>FAQ &amp; known limits</h2>
+
+      <details><summary>What is default.svg and why do I need it?</summary>
+        <p class="a">The script sets <code>Front_SVG = "default.svg"</code> and <code>Back_SVG = "default.svg"</code>, and both are used by <code>import()</code>. On MakerWorld the <code>// @type: file</code> control replaces those strings with whatever SVG you upload. The <code>default.svg</code> shipped here is a tiny single-path placeholder: upload it as a smoke test, or put it next to the <code>.scad</code> when running OpenSCAD locally. If no SVG is available, <code>import()</code> fails and the model will not render.</p>
+      </details>
+
+      <details><summary>Why can't this page generate the model directly?</summary>
+        <p class="a">GitHub Pages serves static files only. OpenSCAD must be compiled by a CAD kernel; the sliders come from magic comments that only MakerWorld / the OpenSCAD Customizer parses. Running OpenSCAD in the browser is possible with a WebAssembly build, but that means rebuilding the entire Customizer UI by hand, shipping a large WASM binary, and still losing the platform's colour, font and 3MF multi-material behaviour. We deliberately chose the lossless route.</p>
+      </details>
+
+      <details><summary>My colours disappeared in the exported file</summary>
+        <p class="a">Expected. <code>color()</code> in OpenSCAD is a preview property; STL stores geometry only and has no colour. MakerWorld's 3MF flow can carry colour / multi-material when the model is generated through its Customizer. For a two-colour print from desktop OpenSCAD, use a filament change at a layer height or paint the embossed details after printing.</p>
+      </details>
+
+      <details><summary>Which fonts can I use?</summary>
+        <p class="a">Only fonts installed on MakerWorld's servers (mostly Google Fonts). The script's <code>Global_Font</code> dropdown already lists the ones it was designed for: Arial Bold, Arial Regular, Courier New Bold, Times New Roman Bold and Impact. When running locally, those fonts must exist on your machine too.</p>
+      </details>
+
+      <details><summary>The model will not render / the SVG looks wrong</summary>
+        <p class="a">Check three things: (1) both front and back SVG file controls have a file; (2) the SVG uses only <code>&lt;path&gt;</code> geometry with M/L/Z/C/A commands — no <code>&lt;text&gt;</code>, no CSS, no external images; (3) the scale is sensible — the default <code>0.15</code> makes a 40-unit drawing about 6 mm wide. Setting <code>FSVG_Depth</code> or <code>FSVG_Emboss</code> to 0 disables that operation.</p>
+      </details>
+
+      <details><summary>Is the .scad really unchanged?</summary>
+        <p class="a">Yes. It is stored byte-for-byte as authored: 339 lines, 11,770 bytes. Use the "Verify the source is byte-for-byte" control in step 1 to compute the fingerprint of the file your browser actually received. This page only adds files under <code>/maker/</code>; it does not read or modify the card page, its config, the editor, or <code>/start/</code>.</p>
+      </details>
+
+      <details><summary>Can I embed the MakerWorld Customizer here with an iframe?</summary>
+        <p class="a">Not reliably. There is no documented, stable embeddable Customizer widget or share link with preset parameters, and cross-origin plus sign-in state get in the way. A plain external link is the dependable option.</p>
+      </details>
+    </section>
+
+    <footer class="foot">
+      <div>
+        <a href="../">Digital card</a><span class="sep">·</span>
+        <a href="../start/">NFC tap setup</a><span class="sep">·</span>
+        <a href="https://github.com/HairuoLiu/nfc-card/tree/main/maker" target="_blank" rel="noopener noreferrer">Source on GitHub ↗</a><span class="sep">·</span>
+        <a href="https://makerworld.com/en/makerlab/parametricModelMaker" target="_blank" rel="noopener noreferrer">Parametric Model Maker ↗</a>
+      </div>
+      <div style="margin-top:8px">3DREAM Ultimate NFC Keychain Configurator · original source preserved verbatim · this page adds files only.</div>
+    </footer>
+  </div>
+
+  <script>
+  (function () {
+    "use strict";
+
+    /* ---- step progress ---- */
+    var steps = Array.prototype.slice.call(document.querySelectorAll(".step"));
+    var dots = Array.prototype.slice.call(document.querySelectorAll(".dot"));
+    var names = steps.map(function (s) { return s.getAttribute("data-name"); });
+    var pNum = document.getElementById("pNum");
+    var pName = document.getElementById("pName");
+
+    function setActive(n) {
+      pNum.textContent = String(n);
+      pName.textContent = names[n - 1] || "";
+      dots.forEach(function (d, i) {
+        d.classList.toggle("now", i === n - 1);
+        d.classList.toggle("done", i < n - 1);
+      });
+      steps.forEach(function (s, i) {
+        if (i === n - 1) { s.setAttribute("data-state", "active"); }
+        else { s.removeAttribute("data-state"); }
+      });
+    }
+    setActive(1);
+
+    if ("IntersectionObserver" in window) {
+      var io = new IntersectionObserver(function (entries) {
+        var best = null;
+        entries.forEach(function (e) {
+          if (e.isIntersecting && (!best || e.intersectionRatio > best.intersectionRatio)) { best = e; }
+        });
+        if (best) { setActive(Number(best.target.getAttribute("data-step"))); }
+      }, { rootMargin: "-15% 0px -55% 0px", threshold: [0, 0.25, 0.5, 1] });
+      steps.forEach(function (s) { io.observe(s); });
+    }
+    dots.forEach(function (d) {
+      d.addEventListener("click", function () {
+        var el = document.getElementById(d.getAttribute("data-go"));
+        if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); }
+      });
+    });
+
+    /* ---- parameter filter ---- */
+    var filter = document.getElementById("filter");
+    var count = document.getElementById("count");
+    var rows = Array.prototype.slice.call(document.querySelectorAll("tr[data-k]"));
+    var groups = Array.prototype.slice.call(document.querySelectorAll(".grp"));
+    var groupOpen0 = groups.map(function (g) { return g.hasAttribute("open"); });
+    filter.addEventListener("input", function () {
+      var q = filter.value.trim().toLowerCase();
+      var shown = 0;
+      rows.forEach(function (r) {
+        var hit = !q || (r.getAttribute("data-k") + " " + r.textContent).toLowerCase().indexOf(q) !== -1;
+        r.hidden = !hit;
+        if (hit) { shown++; }
+      });
+      groups.forEach(function (g, i) {
+        if (!q) {
+          g.hidden = false;
+          if (groupOpen0[i]) { g.setAttribute("open", ""); } else { g.removeAttribute("open"); }
+          return;
+        }
+        var any = Array.prototype.slice.call(g.querySelectorAll("tr[data-k]")).some(function (r) { return !r.hidden; });
+        g.hidden = !any;
+        if (any) { g.setAttribute("open", ""); }
+      });
+      count.textContent = q ? "Showing " + shown + " of " + rows.length + " parameters" : "Showing all " + rows.length + " parameters";
+    });
+    count.textContent = "Showing all " + rows.length + " parameters";
+
+    /* ---- clipboard helper ---- */
+    function copyText(text, btn, okLabel) {
+      var done = function () {
+        var old = btn.textContent;
+        btn.textContent = okLabel;
+        setTimeout(function () { btn.textContent = old; }, 1800);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function () { fallback(); });
+      } else { fallback(); }
+      function fallback() {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "absolute";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand("copy"); done(); } catch (e) { btn.textContent = "Copy failed — select manually"; }
+        document.body.removeChild(ta);
+      }
+    }
+
+    var promptBtn = document.getElementById("copyPrompt");
+    promptBtn.addEventListener("click", function () {
+      copyText(document.getElementById("promptText").textContent, promptBtn, "Copied ✓");
+    });
+
+    /* ---- integrity check: hash the file the browser actually received ---- */
+    var hashOut = document.getElementById("hashOut");
+    var hashBtn = document.getElementById("copyHash");
+    var fingerprint = "";
+    fetch("./3dream-nfc-keychain.scad", { cache: "no-store" })
+      .then(function (r) { if (!r.ok) { throw new Error("HTTP " + r.status); } return r.arrayBuffer(); })
+      .then(function (buf) {
+        var bytes = new Uint8Array(buf);
+        var text = new TextDecoder("utf-8").decode(bytes);
+        var lines = text.split("\n").length;
+        var head = "SHA-256  ";
+        if (window.crypto && window.crypto.subtle && window.crypto.subtle.digest) {
+          return window.crypto.subtle.digest("SHA-256", buf).then(function (h) {
+            var arr = new Uint8Array(h);
+            var hex = Array.prototype.map.call(arr, function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+            fingerprint = hex;
+            hashOut.textContent = head + hex + "\nBytes   " + bytes.length + "\nLines   " + lines;
+          });
+        }
+        fingerprint = String(bytes.length) + " bytes / " + lines + " lines";
+        hashOut.textContent = "Bytes   " + bytes.length + "\nLines   " + lines + "\n(SHA-256 unavailable in this browser)";
+      })
+      .catch(function (e) {
+        hashOut.textContent = "Could not read the source file: " + e.message;
+      });
+    hashBtn.addEventListener("click", function () {
+      if (fingerprint) { copyText(fingerprint, hashBtn, "Copied ✓"); }
+    });
+  })();
+  </script>
+</body>
+</html>
