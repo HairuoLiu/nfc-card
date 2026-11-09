@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  nfc-card / start  ·  Default NFC tap landing page (guided setup)
+  ----------------------------------------------------------------------------
+  Standalone single file: HTML + inline CSS + inline JS. No build step, no CDN,
+  no external dependency. It only ADDS this page; it never reads or changes
+  ../index.html, ../config.js or ../editor.html.
+
+  Read-only checks performed when the visitor submits a GitHub address:
+    1. GET https://api.github.com/repos/{owner}/{repo}          -> repo exists?
+    2. GET https://{owner}.github.io/{repo}/                    -> page live?
+  GitHub Pages returns Access-Control-Allow-Origin: * on BOTH 200 and 404,
+  so a browser CORS fetch can genuinely tell "published" from "not enabled".
+  NOTE: /repos/{owner}/{repo}/pages returns 404 for unauthenticated requests
+  (verified against several repos), so it is deliberately NOT used here.
+  ============================================================================
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Set up your digital card · NFC Start</title>
+  <meta name="description" content="You tapped an NFC tag. In four guided steps, turn your GitHub repository into a public card link and write it onto your own NFC tag." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Set up your digital card · NFC Start" />
+  <meta property="og:description" content="Four guided steps: check your GitHub link, get your public card URL, then write it to an NFC tag with NFC Tools." />
+  <meta name="theme-color" content="#0d0d0d" />
+  <meta name="color-scheme" content="dark" />
+
+  <style>
+    :root {
+      --g1:#0d0d0d; --g2:#2a2300; --accent:#FFB800;
+      --glass:rgba(255,255,255,.05);
+      --border:rgba(255,255,255,.18);
+      --text:rgba(255,255,255,.96);
+      --dim:rgba(255,255,255,.72);
+      --faint:rgba(255,255,255,.50);
+      --ok:#4ADE80; --bad:#FF6B6B; --warn:#FFB800;
+      --radius:22px;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+    html { background:var(--g2); overscroll-behavior-y:none; }
+    body {
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+      background:linear-gradient(160deg,var(--g1),var(--g2));
+      color:var(--text); font-size:16px; line-height:1.55;
+      min-height:100vh; min-height:100dvh;
+      padding:0 16px calc(36px + env(safe-area-inset-bottom));
+    }
+    .wrap { max-width:480px; margin:0 auto; }
+    a { color:var(--accent); }
+
+    /* ---- sticky step progress ---- */
+    .progress {
+      position:sticky; top:0; z-index:30;
+      background:rgba(13,13,13,.88);
+      backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+      border-bottom:1px solid rgba(255,255,255,.08);
+      padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
+      margin:0 -16px 4px;
+    }
+    .progress-in { max-width:480px; margin:0 auto; display:flex; align-items:center; gap:12px; }
+    .p-label { font-size:11px; letter-spacing:.14em; color:var(--dim); font-weight:800; white-space:nowrap; }
+    .p-label b { color:var(--accent); }
+    .dots { display:flex; gap:6px; flex:1; min-width:0; }
+    .dot { height:5px; flex:1; border-radius:99px; background:rgba(255,255,255,.14); transition:background .3s ease; }
+    .dot.done { background:var(--accent); }
+    .dot.now  { background:rgba(255,184,0,.55); }
+    .p-name { font-size:12px; color:var(--faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:40%; }
+    @media (max-width:380px) { .p-name { display:none; } }
+
+    /* ---- hero ---- */
+    .hero { padding:26px 2px 22px; }
+    .badge {
+      display:inline-flex; align-items:center; gap:7px; font-size:11px; letter-spacing:.16em; font-weight:800;
+      color:var(--accent); border:1px solid rgba(255,184,0,.35); background:rgba(255,184,0,.07);
+      padding:6px 12px; border-radius:99px;
+    }
+    h1 { font-size:clamp(26px,7.4vw,34px); line-height:1.18; letter-spacing:-.02em; margin:16px 0 10px; }
+    .lede { color:var(--dim); font-size:16px; }
+    .meta { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+    .chip { font-size:12px; color:var(--dim); background:rgba(255,255,255,.06); border:1px solid var(--border); padding:5px 10px; border-radius:99px; }
+
+    /* ---- step shell ---- */
+    .step {
+      background:var(--glass); border:1px solid var(--border); border-radius:var(--radius);
+      padding:22px 18px; margin-bottom:16px; scroll-margin-top:76px;
+      backdrop-filter:blur(14px) saturate(160%); -webkit-backdrop-filter:blur(14px) saturate(160%);
+      transition:border-color .3s ease, opacity .3s ease, box-shadow .3s ease;
+    }
+    .step[data-state="next"]   { opacity:.72; }
+    .step[data-state="active"] { border-color:rgba(255,184,0,.45); box-shadow:0 0 0 1px rgba(255,184,0,.10),0 18px 40px rgba(13,13,13,.30); }
+    .step[data-state="done"]   { opacity:.94; }
+    .step-head { display:flex; align-items:flex-start; gap:12px; margin-bottom:16px; }
+    .num {
+      flex:0 0 32px; height:32px; border-radius:50%; display:grid; place-items:center;
+      font-weight:800; font-size:15px; background:rgba(255,184,0,.14); color:var(--accent);
+      border:1px solid rgba(255,184,0,.40);
+    }
+    .step[data-state="done"] .num { background:var(--ok); color:#0d0d0d; border-color:var(--ok); }
+    .step-head h2 { font-size:19px; line-height:1.3; letter-spacing:-.01em; }
+    .step-head .sub { font-size:13px; color:var(--dim); margin-top:3px; }
+    .state {
+      margin-left:auto; font-size:10px; font-weight:800; letter-spacing:.10em; text-transform:uppercase;
+      padding:5px 8px; border-radius:6px; white-space:nowrap; background:rgba(255,255,255,.08); color:var(--dim);
+    }
+    .step[data-state="active"] .state { background:rgba(255,184,0,.16); color:var(--accent); }
+    .step[data-state="done"]   .state { background:rgba(74,222,128,.14); color:var(--ok); }
+
+    /* ---- the two mandatory cues: what to do / what you will see ---- */
+    .cue { border-radius:14px; padding:12px 14px; margin-bottom:14px; border:1px solid transparent; }
+    .cue h3 { font-size:10px; letter-spacing:.14em; font-weight:800; margin-bottom:5px; }
+    .cue p  { font-size:14px; line-height:1.55; color:var(--text); }
+    .cue.do  { background:rgba(255,184,0,.08); border-color:rgba(255,184,0,.22); }
+    .cue.do h3 { color:var(--accent); }
+    .cue.see { background:rgba(255,255,255,.045); border-color:var(--border); margin-top:16px; margin-bottom:0; }
+    .cue.see h3 { color:var(--dim); }
+
+    /* ---- form ---- */
+    label { display:block; font-size:13px; font-weight:700; margin:0 0 7px; }
+    input[type="text"], input[type="email"] {
+      width:100%; min-height:52px; font-size:16px; font-family:inherit;
+      background:rgba(0,0,0,.28); border:1px solid var(--border); border-radius:12px;
+      color:var(--text); padding:12px 14px; outline:none;
+    }
+    input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(255,184,0,.14); }
+    input::placeholder { color:rgba(255,255,255,.35); }
+    .hint { font-size:12px; color:var(--faint); margin-top:8px; line-height:1.5; }
+    code { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px; color:var(--dim); }
+    .preview { margin-top:10px; font-size:12px; min-height:18px; word-break:break-all; color:var(--faint); }
+    .preview.good { color:var(--ok); }
+    .preview.bad  { color:var(--bad); }
+    details.opt { margin:14px 0 4px; border:1px dashed var(--border); border-radius:12px; padding:0 12px; }
+    details.opt summary {
+      cursor:pointer; padding:12px 0; min-height:48px; display:flex; align-items:center;
+      font-size:13px; font-weight:700; color:var(--dim);
+    }
+    .opt-body { padding-bottom:14px; }
+    .opt-body label { margin-top:12px; }
+    .opt-body .hint { margin-top:6px; }
+    .btn {
+      display:inline-flex; align-items:center; justify-content:center; gap:9px;
+      min-height:52px; width:100%; border:0; border-radius:14px;
+      font-size:16px; font-weight:800; font-family:inherit; cursor:pointer;
+      background:var(--accent); color:#0d0d0d; padding:12px 16px; margin-top:14px;
+      transition:transform .15s ease, filter .2s ease;
+    }
+    .btn:active { transform:scale(.985); }
+    .btn[disabled] { opacity:.6; cursor:wait; }
+    .btn.sec { background:rgba(255,255,255,.09); color:var(--text); border:1px solid var(--border); }
+    .btn.sm  { min-height:48px; font-size:14px; margin-top:0; }
+    .btn-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+    @media (max-width:360px) { .btn-row { grid-template-columns:1fr; } }
+
+    /* ---- result ---- */
+    .result-empty { padding:22px 14px; text-align:center; border:1px dashed var(--border); border-radius:14px; color:var(--faint); font-size:14px; }
+    .checks { list-style:none; display:grid; gap:9px; margin-bottom:16px; }
+    .check { display:flex; gap:11px; align-items:flex-start; background:rgba(255,255,255,.045); border:1px solid var(--border); border-radius:12px; padding:11px 12px; }
+    .ci {
+      flex:0 0 22px; height:22px; border-radius:50%; display:grid; place-items:center;
+      font-size:13px; font-weight:900; background:rgba(255,255,255,.12); color:var(--dim);
+    }
+    .ct { min-width:0; }
+    .ct b { display:block; font-size:14px; }
+    .ct span { display:block; font-size:12px; color:var(--dim); margin-top:3px; line-height:1.45; word-break:break-word; }
+    .check[data-s="pass"] .ci { background:rgba(74,222,128,.18); color:var(--ok); }
+    .check[data-s="fail"] .ci { background:rgba(255,107,107,.18); color:var(--bad); }
+    .check[data-s="warn"] .ci,
+    .check[data-s="skip"] .ci { background:rgba(255,184,0,.18); color:var(--accent); }
+    .check[data-s="pass"] { border-color:rgba(74,222,128,.24); }
+    .check[data-s="fail"] { border-color:rgba(255,107,107,.28); }
+    .ci.spin { border:2px solid rgba(255,255,255,.20); border-top-color:var(--accent); background:transparent; animation:sp .7s linear infinite; }
+    @keyframes sp { to { transform:rotate(360deg); } }
+
+    .final { background:linear-gradient(150deg,rgba(255,184,0,.13),rgba(255,184,0,.04)); border:1px solid rgba(255,184,0,.32); border-radius:16px; padding:16px; }
+    .flabel { font-size:10px; letter-spacing:.14em; color:var(--accent); font-weight:800; }
+    .furl { font-size:17px; font-weight:800; word-break:break-all; line-height:1.35; margin:8px 0 4px; color:#fff; }
+    .kv { display:grid; grid-template-columns:auto 1fr; gap:5px 12px; font-size:12px; margin-top:14px; }
+    .kv dt { color:var(--faint); }
+    .kv dd { color:var(--dim); word-break:break-all; }
+    .note { font-size:12px; color:var(--dim); margin-top:12px; line-height:1.55; }
+    details.diag { margin-top:12px; font-size:12px; color:var(--faint); }
+    details.diag summary { cursor:pointer; padding:10px 0; min-height:44px; display:flex; align-items:center; }
+    pre.diag-body { white-space:pre-wrap; word-break:break-word; font-size:11px; color:var(--dim); background:rgba(0,0,0,.30); padding:12px; border-radius:10px; overflow:auto; }
+
+    /* ---- app + numbered steps ---- */
+    .app { display:flex; gap:12px; align-items:center; background:rgba(255,255,255,.05); border:1px solid var(--border); border-radius:14px; padding:14px; margin:4px 0 14px; }
+    .app-ic { flex:0 0 46px; height:46px; border-radius:12px; background:var(--accent); color:#0d0d0d; display:grid; place-items:center; font-weight:900; font-size:19px; }
+    .app b { font-size:16px; }
+    .app p { font-size:12px; color:var(--dim); margin-top:2px; }
+    .store-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px; }
+    @media (max-width:360px) { .store-row { grid-template-columns:1fr; } }
+    .store { display:flex; align-items:center; justify-content:center; gap:6px; min-height:48px; border:1px solid var(--border); border-radius:12px; color:var(--text); text-decoration:none; font-size:13px; font-weight:700; background:rgba(255,255,255,.05); }
+    .store:active { background:rgba(255,184,0,.12); }
+    ol.howto { list-style:none; counter-reset:s; }
+    ol.howto li { counter-increment:s; position:relative; padding:0 0 14px 36px; font-size:14px; line-height:1.55; }
+    ol.howto li:last-child { padding-bottom:0; }
+    ol.howto li::before { content:counter(s); position:absolute; left:0; top:1px; width:24px; height:24px; border-radius:50%; background:rgba(255,184,0,.14); border:1px solid rgba(255,184,0,.35); color:var(--accent); font-size:12px; font-weight:800; display:grid; place-items:center; }
+    ol.howto li:not(:last-child)::after { content:""; position:absolute; left:11px; top:27px; bottom:2px; width:1px; background:var(--border); }
+
+    /* ---- prompt + about ---- */
+    .prompt-wrap { border:1px solid var(--border); border-radius:14px; overflow:hidden; background:rgba(0,0,0,.26); }
+    .prompt-bar { display:flex; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid var(--border); }
+    .prompt-bar span { font-size:12px; color:var(--dim); flex:1; min-width:0; }
+    .prompt-bar .btn { width:auto; margin:0; min-height:40px; padding:8px 14px; font-size:13px; }
+    pre.prompt { max-height:250px; overflow:auto; padding:14px; font-size:12px; line-height:1.55; color:var(--dim); white-space:pre-wrap; word-break:break-word; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+    .about { margin-top:18px; padding-top:16px; border-top:1px solid var(--border); }
+    .about h3 { font-size:15px; margin-bottom:8px; }
+    .about p { font-size:14px; color:var(--dim); margin-bottom:10px; line-height:1.62; }
+    .about strong { color:var(--text); }
+
+    footer { text-align:center; padding:22px 4px 8px; font-size:12px; color:var(--faint); line-height:1.8; }
+    footer a { color:var(--dim); }
+    .toast {
+      position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom)); transform:translate(-50%,20px);
+      background:#141414; color:#fff; border:1px solid var(--border); border-radius:99px; padding:12px 20px;
+      font-size:14px; font-weight:700; opacity:0; pointer-events:none; transition:.25s ease; z-index:50;
+      box-shadow:0 10px 30px rgba(0,0,0,.5); white-space:nowrap; max-width:90vw; overflow:hidden; text-overflow:ellipsis;
+    }
+    .toast.show { opacity:1; transform:translate(-50%,0); }
+    [hidden] { display:none !important; }
+    @media (prefers-reduced-motion:reduce) { * { animation-duration:.01ms !important; transition-duration:.01ms !important; scroll-behavior:auto !important; } }
+  </style>
+</head>
+<body>
+
+  <div class="progress" aria-label="Setup progress">
+    <div class="progress-in">
+      <span class="p-label">STEP <b id="curStep">1</b> / 4</span>
+      <span class="dots" aria-hidden="true">
+        <i class="dot now"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i>
+      </span>
+      <span class="p-name" id="pName">Paste your link</span>
+    </div>
+  </div>
+
+  <main class="wrap">
+
+    <header class="hero">
+      <span class="badge">◈ NFC · START HERE</span>
+      <h1>Set up your own digital card</h1>
+      <p class="lede">You just tapped an NFC tag. This page turns your GitHub repository into a public card link you can write onto your own tag — in four guided steps, straight from your phone.</p>
+      <div class="meta">
+        <span class="chip">4 guided steps</span>
+        <span class="chip">≈ 3 minutes</span>
+        <span class="chip">No coding needed</span>
+        <span class="chip">Read-only checks</span>
+      </div>
+    </header>
+
+    <!-- =================== STEP 1 =================== -->
+    <section class="step" id="step1" data-state="active" aria-labelledby="h1">
+      <div class="step-head">
+        <span class="num" aria-hidden="true">1</span>
+        <div>
+          <h2 id="h1">Paste your GitHub link</h2>
+          <p class="sub">The address of the repository holding your card.</p>
+        </div>
+        <span class="state">Current</span>
+      </div>
+
+      <div class="cue do">
+        <h3>DO THIS NOW</h3>
+        <p>Paste the address of your forked <strong>nfc-card</strong> repository into the box below, then tap <strong>Check my link</strong>. Name and email are optional.</p>
+      </div>
+
+      <form id="checkForm" novalidate>
+        <label for="repoUrl">Your GitHub repository address</label>
+        <input id="repoUrl" name="repoUrl" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false"
+               autocomplete="off" placeholder="https://github.com/your-name/nfc-card" required
+               aria-describedby="urlHint parsePreview" />
+        <p class="hint" id="urlHint">Also accepts <code>your-name/nfc-card</code>, or a published <code>your-name.github.io/nfc-card/</code> link.</p>
+        <div class="preview" id="parsePreview" aria-live="polite"></div>
+
+        <details class="opt">
+          <summary>Optional: your name &amp; email</summary>
+          <div class="opt-body">
+            <label for="ownerName">Your name (shown only on your result card)</label>
+            <input id="ownerName" type="text" autocomplete="name" placeholder="e.g. Alex Chen" />
+            <label for="ownerEmail">Email (only used to mail the link to yourself)</label>
+            <input id="ownerEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" />
+            <p class="hint">Nothing is uploaded or stored. Both fields stay in this browser tab and are never published.</p>
+          </div>
+        </details>
+
+        <button class="btn" type="submit" id="checkBtn"><span id="checkBtnText">Check my link</span><span aria-hidden="true">→</span></button>
+      </form>
+
+      <div class="cue see">
+        <h3>WHEN IT'S DONE, YOU'LL SEE</h3>
+        <p>Step 2 opens with a four-line check result: whether your link parsed, whether the repository exists, whether the public page responds, and whether the link is ready for NFC — plus your final public address, ready to copy.</p>
+      </div>
+    </section>
+
+    <!-- =================== STEP 2 =================== -->
+    <section class="step" id="step2" data-state="next" aria-labelledby="h2">
+      <div class="step-head">
+        <span class="num" aria-hidden="true">2</span>
+        <div>
+          <h2 id="h2">Read your check results</h2>
+          <p class="sub">Automatic validation &amp; parsing, no account needed.</p>
+        </div>
+        <span class="state">Next</span>
+      </div>
+
+      <div class="cue do">
+        <h3>DO THIS NOW</h3>
+        <p>Read each of the four lines below. A green line means pass; an amber line means the check could not be confirmed; a red line tells you exactly what to fix. Then copy your public link.</p>
+      </div>
+
+      <div id="resultArea" aria-live="polite">
+        <div class="result-empty" id="resultEmpty">Nothing checked yet. Complete Step 1 and your results will appear here automatically.</div>
+
+        <div id="resultBody" hidden>
+          <ul class="checks">
+            <li class="check" id="chk1" data-s="pending"><span class="ci spin" aria-hidden="true"></span><span class="ct"><b>Link parsed</b><span>Reading your link…</span></span></li>
+            <li class="check" id="chk2" data-s="pending"><span class="ci spin" aria-hidden="true"></span><span class="ct"><b>Repository found on GitHub</b><span>Waiting…</span></span></li>
+            <li class="check" id="chk3" data-s="pending"><span class="ci spin" aria-hidden="true"></span><span class="ct"><b>Public page responds</b><span>Waiting…</span></span></li>
+            <li class="check" id="chk4" data-s="pending"><span class="ci spin" aria-hidden="true"></span><span class="ct"><b>Ready to write to NFC</b><span>Waiting…</span></span></li>
+          </ul>
+
+          <div class="final" id="finalCard" hidden>
+            <span class="flabel">YOUR PUBLIC CARD LINK</span>
+            <p class="furl" id="finalUrl"></p>
+            <dl class="kv">
+              <dt>Owner</dt><dd id="kvOwner"></dd>
+              <dt>Repository</dt><dd id="kvRepo"></dd>
+              <dt>Page type</dt><dd id="kvType"></dd>
+              <div id="kvForRow" hidden style="display:contents"><dt>Prepared for</dt><dd id="kvFor"></dd></div>
+            </dl>
+            <p class="note" id="finalNote"></p>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn sm" type="button" id="copyLinkBtn">Copy link</button>
+            <a class="btn sm sec" id="openLink" href="#" target="_blank" rel="noopener noreferrer" style="text-decoration:none">Open link ↗</a>
+          </div>
+          <div class="btn-row">
+            <a class="btn sm sec" id="repoLink" href="https://github.com/HairuoLiu/nfc-card" target="_blank" rel="noopener noreferrer" style="text-decoration:none">Open repository ↗</a>
+            <a class="btn sm sec" id="mailLink" href="#" hidden style="text-decoration:none">Email me the link</a>
+          </div>
+          <button class="btn sec" type="button" id="toStep3">Take me to Step 3 →</button>
+
+          <details class="diag" id="diag" hidden>
+            <summary>Technical details (status codes &amp; fallback reason)</summary>
+            <pre class="diag-body" id="diagBody"></pre>
+          </details>
+        </div>
+      </div>
+
+      <div class="cue see">
+        <h3>WHEN IT'S DONE, YOU'LL SEE</h3>
+        <p>A gold card with your final public address and four green checks. If a check is red, you'll see the exact GitHub Pages setting to change before running the check again.</p>
+      </div>
+    </section>
+
+    <!-- =================== STEP 3 =================== -->
+    <section class="step" id="step3" data-state="next" aria-labelledby="h3">
+      <div class="step-head">
+        <span class="num" aria-hidden="true">3</span>
+        <div>
+          <h2 id="h3">Write the link to your NFC tag</h2>
+          <p class="sub">The one app you need on your phone.</p>
+        </div>
+        <span class="state">Next</span>
+      </div>
+
+      <div class="cue do">
+        <h3>DO THIS NOW</h3>
+        <p>Install <strong>NFC Tools</strong> on your phone, copy the link from Step 2, and write it as a <strong>URL record</strong> onto a blank NTAG213 / NTAG215 sticker.</p>
+      </div>
+
+      <div class="app">
+        <span class="app-ic" aria-hidden="true">N</span>
+        <div>
+          <b>NFC Tools</b>
+          <p>Free · iPhone &amp; Android · by WAK dev<br />Writes a web address onto an NFC sticker.</p>
+        </div>
+      </div>
+      <div class="store-row">
+        <a class="store" href="https://apps.apple.com/us/search?term=NFC%20Tools" target="_blank" rel="noopener noreferrer"> App Store ↗</a>
+        <a class="store" href="https://play.google.com/store/search?q=NFC%20Tools&amp;c=apps" target="_blank" rel="noopener noreferrer"> Google Play ↗</a>
+      </div>
+      <p class="hint" style="margin-bottom:16px">Search for <strong>NFC Tools</strong> in your store and install the free version. Your phone must support NFC writing (most Android phones, and iPhone XS or newer).</p>
+
+      <ol class="howto">
+        <li>Get a blank <strong>NTAG213 / NTAG215</strong> sticker or card (a few cents each; NTAG215 holds a URL comfortably).</li>
+        <li>Open <strong>NFC Tools</strong> → tap <strong>Write</strong> → <strong>Add a record</strong> → <strong>URL</strong>.</li>
+        <li>Paste the public link you copied in Step 2, then tap <strong>Write</strong>.</li>
+        <li>Hold the phone against the sticker and keep it still until the app confirms.</li>
+      </ol>
+
+      <div class="cue see">
+        <h3>WHEN IT'S DONE, YOU'LL SEE</h3>
+        <p>The app shows a <strong>"Write complete"</strong> confirmation. From then on, tapping any NFC-enabled phone against that sticker opens your card automatically — no app install needed for the person tapping.</p>
+      </div>
+    </section>
+
+    <!-- =================== STEP 4 =================== -->
+    <section class="step" id="step4" data-state="next" aria-labelledby="h4">
+      <div class="step-head">
+        <span class="num" aria-hidden="true">4</span>
+        <div>
+          <h2 id="h4">New to this? Let an AI walk you through it</h2>
+          <p class="sub">Use this if you don't have a GitHub link yet.</p>
+        </div>
+        <span class="state">Next</span>
+      </div>
+
+      <div class="cue do">
+        <h3>DO THIS NOW</h3>
+        <p>If you don't yet have a repository, tap <strong>Copy prompt</strong> and paste it into any AI assistant. It will collect your details one question at a time before doing anything.</p>
+      </div>
+
+      <div class="prompt-wrap">
+        <div class="prompt-bar">
+          <span>Total beginner? Copy this prompt into any AI</span>
+          <button class="btn" type="button" id="copyPromptBtn">Copy prompt</button>
+        </div>
+        <pre class="prompt" id="promptText">You are a patient, friendly deployment guide helping a complete beginner publish their own digital business card online. The beginner has likely never used GitHub and may not even have an account yet. Your job is to walk them through the whole thing, one small step at a time. Follow these hard rules no matter what happens:
+
+ROLE AND HARD RULES
+- Never assume anything. Never fill in information on the user's behalf. Never invent a name, a link, or a value.
+- DO NOT START DEPLOYING until you have gathered and confirmed every piece of information below.
+- Ask only ONE or TWO questions at a time. Wait for the user's answer before asking the next group. Never dump a long list of questions and leave them to figure it out.
+- For every single item the user has not already volunteered, you must proactively ask "would you like to add this?" and confirm each item one by one, repeatedly. If the user answers "no", "skip", "none", "I don't have one", or anything similar, skip it immediately and move on — never stall, never pressure, never re-ask.
+- NEVER ask for a password, an access token, a verification code, or any credential of any kind. Right at the start, proactively warn the user: "Please never share your password, any codes, or secret tokens with me — I will never ask for them, and you should never paste them here."
+- Use zero jargon. Explain technical words in plain language every time: a "repository" is "a folder that holds your project"; to "fork" means "make your own copy"; "commit" means "save your changes". Keep sentences short and give exactly one clear action at a time. Be warm, encouraging, and never dismissive.
+
+ABOUT THE PROJECT (use these facts exactly, do not change them)
+- The project is "nfc-card", a single-page static digital business card, at https://github.com/HairuoLiu/nfc-card.
+- It is plain HTML/CSS/JavaScript with no build step. The ONLY file to edit is config.js, which controls all the text, the links, and the theme color. index.html is the page itself and should NOT be edited.
+- Publishing uses GitHub Pages. The final public link looks like https://&lt;username&gt;.github.io/&lt;repo&gt;/ (a project page) or https://&lt;username&gt;.github.io/ (a personal home page).
+- At the bottom of the card is a row of social icons. However many social links you fill in, that many icons appear; anything left blank stays hidden, and the visible icons evenly share the width of the bottom bar. The user can absolutely provide just 2 links — never force them to fill 4.
+- This card is for an international audience. Stick to globally available platforms (X, LinkedIn, Instagram, GitHub, or similar) and never suggest regional chat apps.
+
+INFORMATION TO GATHER (ask and confirm each one individually)
+Required: full name; a one-line title (e.g. "Designer"); a 1–2 line short bio; an avatar image (ask how they want to provide it, or tell them they can add it later); their GitHub username; the repository name they want; whether they already have a GitHub account; their X link.
+Optional — still ask one by one, and default to skip if declined: email; phone — clearly say this is NOT shown publicly by default; theme color.
+Social links: ask ONE AT A TIME — "X?" then "LinkedIn?" then "Instagram?" then "GitHub?" then "any other?" — and explicitly tell them: "Fill in as many as you like; the card shows only the ones you fill in. Two is completely fine." Confirm each answer before moving to the next.
+Keep a short, friendly summary of everything confirmed, show it back to the user, and wait for their OK before any deployment begins.
+
+DEPLOYMENT — STEP BY STEP (one step per message; wait for "done" / "好了" each time)
+After the summary is confirmed, guide them through these steps. For EVERY step: give one clear action, describe "what you should see now" so they can tell it worked, then STOP and wait for the user to reply "done" or "好了" before continuing. Never combine steps or skip ahead.
+1. Sign up or log in at github.com (help them create an account if they need one).
+2. Open https://github.com/HairuoLiu/nfc-card and click "Fork" (make your own copy); the Fork button is at the top-right of the page. Use the repository name we confirmed.
+3. Decide together: a project page (link ends with /&lt;repo&gt;/) or a personal page (https://&lt;username&gt;.github.io/). Explain simply and let them pick; for the personal page the repository must be named exactly &lt;username&gt;.github.io.
+4. In the new repository, go to Settings → Pages; set Source / branch = main and directory = /(root), then save.
+5. On the repository page, open config.js and click the pencil (edit) icon. Fill in ONLY the information we confirmed. You MUST click the green "Commit changes" button to save, or nothing changes.
+6. Wait 1–2 minutes.
+7. Open the public link and verify the card shows up correctly.
+
+TROUBLESHOOTING CHECKLIST (offer the relevant part whenever the user gets stuck; always give "try this first, then this" concrete actions, never just "check your settings")
+- No GitHub account: first sign up at github.com with an email, then verify that email, then come back to the Fork step.
+- Can't find the Fork button: first look at the very top-right of the repository page; if it is not there, make sure you are logged in, then reload the page.
+- Wrong repository name or capitalization: first compare the name in the URL bar with the link you are opening; then rename the repository in Settings if it differs, and re-open the link with the exact same letters and case.
+- Pages Source / branch / directory wrong: first confirm branch = main and folder = /(root); then re-save, wait 1–2 minutes, and open the link again.
+- Saved nothing / no change: first confirm you actually clicked the green "Commit changes" button; then reload config.js to see whether your text is still there; if it is not, edit again and commit.
+- Edited the wrong file: first undo any changes made to index.html; then open config.js instead and make the edits there.
+- 404 on the link: first check that the repository name and the link match exactly; then confirm Pages is enabled and wait 1–2 minutes; then open the link in a private/incognito window to rule out cache.
+- Changes not visible: first do a hard refresh (Ctrl+Shift+R on Windows, Cmd+Shift+R on Mac); then wait 1–2 minutes; then try a private window.
+- Phone layout: open the link on your phone; if anything looks cramped, tell me and we will shorten the bio or reduce the number of social icons.
+- Custom domain: optional — mention only briefly if the user asks, and never push it.
+
+FINISH
+When the card loads correctly, clearly hand the user their shareable public link, congratulate them warmly, and suggest easy next steps (swap the avatar, add or remove a social link, try a new theme color). Never finish the conversation until they have a working link they can actually show to someone.</pre>
+      </div>
+      <p class="hint" style="margin-top:10px">Source: the <a href="https://github.com/HairuoLiu/nfc-card/blob/main/README.md" target="_blank" rel="noopener noreferrer">nfc-card README</a>. It never asks for a password, token or verification code.</p>
+
+      <div class="about">
+        <h3>About this page</h3>
+        <p><strong>What it is for.</strong> This is the default landing page opened when someone taps an NFC tag pointing at <code>/nfc-card/start/</code>. It checks your GitHub repository (read-only) and hands you the exact public URL to write back onto your own tag. It never edits your repository, never stores what you type, and does not change your existing card page.</p>
+        <p><strong>Which prompt to use.</strong> Use the <strong>"Total beginner? Copy this prompt into any AI"</strong> prompt embedded above — the same one from the project README. Paste it into any AI assistant; it asks for your name, links and preferences one at a time, confirms each one, then guides you through forking the repository and enabling GitHub Pages until you have a working public link. Run it first if you do not have a repository yet, then come back to Step 1.</p>
+        <p><strong>How to get the software on your phone.</strong> The only app to install is <strong>NFC Tools</strong> (free) — get it from the <a href="https://apps.apple.com/us/search?term=NFC%20Tools" target="_blank" rel="noopener noreferrer">App Store on iPhone</a> or <a href="https://play.google.com/store/search?q=NFC%20Tools&amp;c=apps" target="_blank" rel="noopener noreferrer">Google Play on Android</a> by searching the name. It writes the URL onto a blank NFC sticker (Step 3). The card itself is just a web page: there is nothing to download for it. If you want an icon on your home screen, open the card in Safari or Chrome and choose <strong>Add to Home Screen</strong>.</p>
+      </div>
+
+      <div class="cue see">
+        <h3>WHEN IT'S DONE, YOU'LL SEE</h3>
+        <p>The AI asks you one or two friendly questions at a time, shows a short summary for your approval, then takes you through fork → enable Pages → open the link. You finish with a public address you can show to anyone — and you can bring it back to Step 1 to verify it.</p>
+      </div>
+    </section>
+
+    <footer>
+      <p><a href="../">← Back to the demo card</a> · <a href="https://github.com/HairuoLiu/nfc-card" target="_blank" rel="noopener noreferrer">nfc-card on GitHub</a></p>
+      <p>Single-file static page · MIT · All checks are read-only and run in your browser.</p>
+    </footer>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <noscript><p style="padding:16px;color:#fff">JavaScript is needed for the automatic link check. The setup instructions and the AI prompt above are still readable without it.</p></noscript>
+
+  <script>
+  (function () {
+    'use strict';
+
+    var Q  = function (s, r) { return (r || document).querySelector(s); };
+    var QA = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+    var STEP_NAMES = ['Paste your link', 'Read your results', 'Write to NFC', 'Use the AI prompt'];
+    var STEP_IDS   = ['step1', 'step2', 'step3', 'step4'];
+
+    /* ---------------- progress / step states ---------------- */
+    function setProgress(doneCount, activeIndex) {
+      Q('#curStep').textContent = String(activeIndex + 1);
+      Q('#pName').textContent = STEP_NAMES[activeIndex];
+      QA('.dot').forEach(function (d, i) {
+        d.className = 'dot' + (i < doneCount ? ' done' : (i === activeIndex ? ' now' : ''));
+      });
+      QA('.step').forEach(function (sec, i) {
+        var st = i < doneCount ? 'done' : (i === activeIndex ? 'active' : 'next');
+        sec.setAttribute('data-state', st);
+        Q('.state', sec).textContent = st === 'done' ? 'Done' : (st === 'active' ? 'Current' : 'Next');
+        Q('.num', sec).textContent = st === 'done' ? '\u2713' : String(i + 1);
+      });
+    }
+    function focusStep(i, doneCount, smooth) {
+      setProgress(doneCount, i);
+      var el = document.getElementById(STEP_IDS[i]);
+      if (el) el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+    }
+
+    /* ---------------- toast + clipboard ---------------- */
+    var toastTimer = null;
+    function toast(msg) {
+      var t = Q('#toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2200);
+    }
+    function legacyCopy(text) {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+      document.body.appendChild(ta);
+      ta.select(); ta.setSelectionRange(0, text.length);
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      return ok;
+    }
+    function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text).then(
+          function () { return true; },
+          function () { return legacyCopy(text); }
+        );
+      }
+      return Promise.resolve(legacyCopy(text));
+    }
+
+    /* ---------------- parsing (no network) ---------------- */
+    var USER_RE = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/;
+    var REPO_RE = /^[A-Za-z0-9._-]{1,100}$/;
+
+    function parseInput(raw) {
+      var s = String(raw || '').trim().replace(/^@/, '');
+      if (!s) return { ok: false, reason: 'empty' };
+      var cleaned = s
+        .replace(/^https?:\/\//i, '')
+        .replace(/^www\./i, '')
+        .replace(/\/+$/, '')
+        .replace(/\.git$/i, '');
+
+      var owner = '', repo = '', m;
+
+      // github.com/owner/repo/tree/main/... -> keep the first two segments
+      m = cleaned.match(/^github\.com\/([^/?#]+)\/([^/?#]+)/i);
+      if (m) { owner = m[1]; repo = m[2]; }
+
+      // owner.github.io/repo  or  owner.github.io (user / org page)
+      if (!owner) {
+        m = cleaned.match(/^([A-Za-z0-9-]+)\.github\.io(?:\/([^/?#]+))?/i);
+        if (m) { owner = m[1]; repo = m[2] || (owner + '.github.io'); }
+      }
+
+      // bare owner/repo
+      if (!owner) {
+        m = cleaned.match(/^([^/\s]+)\/([^/\s]+)$/);
+        if (m) { owner = m[1]; repo = m[2]; }
+      }
+
+      if (!owner || !repo) return { ok: false, reason: 'format' };
+      if (!USER_RE.test(owner) || !REPO_RE.test(repo)) return { ok: false, reason: 'chars' };
+
+      var isUserPage = repo.toLowerCase() === (owner + '.github.io').toLowerCase();
+      var host = owner.toLowerCase() + '.github.io';
+      return {
+        ok: true,
+        owner: owner,
+        repo: repo,
+        pageType: isUserPage ? 'User / organization page' : 'Project page',
+        finalUrl: isUserPage ? 'https://' + host + '/' : 'https://' + host + '/' + repo + '/',
+        repoUrl: 'https://github.com/' + owner + '/' + repo
+      };
+    }
+    function parseError(reason) {
+      if (reason === 'empty') return 'Paste a GitHub address to begin.';
+      if (reason === 'chars') return 'That name contains characters GitHub does not allow.';
+      return 'That does not look like a GitHub address yet. Try https://github.com/your-name/nfc-card';
+    }
+
+    /* ---------------- read-only network checks ---------------- */
+    function fetchJSON(url, ms) {
+      var ctrl = ('AbortController' in window) ? new AbortController() : null;
+      var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, ms || 9000) : null;
+      var opts = { headers: { 'Accept': 'application/vnd.github+json' } };
+      if (ctrl) opts.signal = ctrl.signal;
+      return fetch(url, opts).then(function (r) {
+        if (timer) clearTimeout(timer);
+        var remaining = r.headers.get('x-ratelimit-remaining');
+        return r.json().catch(function () { return {}; }).then(function (body) {
+          return { status: r.status, ok: r.ok, body: body, remaining: remaining };
+        });
+      }).catch(function (e) {
+        if (timer) clearTimeout(timer);
+        return { status: 0, ok: false, network: true, error: String((e && e.message) || e) };
+      });
+    }
+
+    // GitHub Pages sends Access-Control-Allow-Origin: * on BOTH 200 and 404,
+    // so a CORS fetch can really distinguish "live" from "not published".
+    // A TypeError/abort only means "could not verify" (offline, DNS, blocked).
+    function probeSite(url, ms) {
+      var ctrl = ('AbortController' in window) ? new AbortController() : null;
+      var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, ms || 9000) : null;
+      var opts = { method: 'GET', mode: 'cors', redirect: 'follow' };
+      if (ctrl) opts.signal = ctrl.signal;
+      return fetch(url, opts).then(function (r) {
+        if (timer) clearTimeout(timer);
+        return { status: r.status, ok: r.ok };
+      }).catch(function () {
+        if (timer) clearTimeout(timer);
+        return { status: 0, ok: false, network: true };
+      });
+    }
+
+    /* ---------------- result rendering ---------------- */
+    function setCheck(n, status, msg) {
+      var li = Q('#chk' + n);
+      li.setAttribute('data-s', status);
+      var ci = Q('.ci', li);
+      ci.className = 'ci' + (status === 'pending' ? ' spin' : '');
+      ci.textContent = status === 'pass' ? '\u2713'
+        : status === 'fail' ? '\u2715'
+        : (status === 'warn' || status === 'skip') ? '!' : '';
+      if (msg !== undefined) Q('.ct span', li).textContent = msg;
+    }
+
+    function renderResult(p, repo, site) {
+      setCheck(1, 'pass', 'Parsed ' + p.owner + ' / ' + p.repo + ' as a ' + p.pageType.toLowerCase() + '.');
+
+      var rs, rm;
+      if (repo.status === 200) {
+        rs = 'pass'; rm = 'Public repository found at github.com/' + p.owner + '/' + p.repo + '.';
+      } else if (repo.status === 404) {
+        rs = 'fail'; rm = 'No public repository at that address. Check the spelling, or make the repository public first.';
+      } else if (repo.status === 403) {
+        rs = 'warn'; rm = 'GitHub\u2019s free API limit (60 checks per hour) was reached, so the repository could not be confirmed right now. This does not affect your link.';
+      } else {
+        rs = 'skip'; rm = 'Could not reach the GitHub API (offline or blocked). Skipped this check; the other checks still ran.';
+      }
+      setCheck(2, rs, rm);
+
+      var ss, sm;
+      if (site.status === 200) {
+        ss = 'pass'; sm = 'Your public page answered with HTTP 200 \u2014 the link is live.';
+      } else if (site.status === 404) {
+        ss = 'fail'; sm = 'Nothing is published at this address yet. In your repo: Settings \u2192 Pages \u2192 Source "Deploy from a branch" \u2192 main / (root) \u2192 Save, then wait 1\u20132 minutes.';
+      } else {
+        ss = 'warn'; sm = 'Could not verify from this browser (network or CORS). Open the link on your phone to confirm \u2014 the address below is inferred from your repository name.';
+      }
+      setCheck(3, ss, sm);
+
+      var ready, rdyMsg;
+      if (site.status === 200) {
+        ready = 'pass'; rdyMsg = 'Copy the link below and continue to Step 3 to write it onto your NFC tag.';
+      } else if (site.status === 404) {
+        ready = 'fail'; rdyMsg = 'Enable GitHub Pages first, then press "Check again" in Step 1.';
+      } else {
+        ready = 'warn'; rdyMsg = 'Likely ready but unconfirmed. Tap "Open link" to test it yourself before writing it to a tag.';
+      }
+      setCheck(4, ready, rdyMsg);
+
+      Q('#finalUrl').textContent = p.finalUrl;
+      Q('#kvOwner').textContent = p.owner;
+      Q('#kvRepo').textContent = p.repo;
+      Q('#kvType').textContent = p.pageType;
+      var name = Q('#ownerName').value.trim();
+      Q('#kvForRow').hidden = !name;
+      if (name) Q('#kvFor').textContent = name;
+      Q('#finalNote').textContent = site.status === 200
+        ? 'Verified just now: this address is live and can be written to an NFC tag.'
+        : 'This address is derived from your repository name. Confirm it opens before writing it to a tag.';
+      Q('#finalCard').hidden = false;
+      Q('#openLink').href = p.finalUrl;
+      Q('#repoLink').href = p.repoUrl;
+
+      var email = Q('#ownerEmail').value.trim();
+      var mail = Q('#mailLink');
+      mail.hidden = !email;
+      if (email) {
+        mail.href = 'mailto:' + encodeURIComponent(email)
+          + '?subject=' + encodeURIComponent('My digital card link')
+          + '&body=' + encodeURIComponent('My public card: ' + p.finalUrl + '\n\nOpen it on your phone, then write this URL to an NFC tag with NFC Tools.');
+      }
+
+      Q('#diagBody').textContent = JSON.stringify({
+        input: { owner: p.owner, repo: p.repo, pageType: p.pageType, finalUrl: p.finalUrl },
+        repoApi: { url: 'https://api.github.com/repos/' + p.owner + '/' + p.repo, status: repo.status, rateLimitRemaining: repo.remaining || null, networkError: !!repo.network },
+        pageProbe: { url: p.finalUrl, status: site.status, networkError: !!site.network },
+        note: 'The /repos/{owner}/{repo}/pages endpoint is intentionally not used: it returns 404 for unauthenticated requests. Page availability is checked by fetching the public URL directly, which GitHub Pages serves with Access-Control-Allow-Origin: * on both 200 and 404.'
+      }, null, 2);
+      Q('#diag').hidden = false;
+
+      var btn = Q('#checkBtn');
+      btn.disabled = false;
+      Q('#checkBtnText').textContent = 'Check again';
+      setProgress(2, 2);
+    }
+
+    /* ---------------- wiring ---------------- */
+    var input = Q('#repoUrl');
+    var preview = Q('#parsePreview');
+
+    input.addEventListener('input', function () {
+      var v = input.value.trim();
+      if (!v) { preview.textContent = ''; preview.className = 'preview'; return; }
+      var r = parseInput(v);
+      if (r.ok) {
+        preview.textContent = 'Will check: ' + r.finalUrl;
+        preview.className = 'preview good';
+      } else {
+        preview.textContent = parseError(r.reason);
+        preview.className = 'preview bad';
+      }
+    });
+
+    Q('#checkForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var p = parseInput(input.value);
+      if (!p.ok) {
+        preview.textContent = parseError(p.reason);
+        preview.className = 'preview bad';
+        toast('Check the address and try again');
+        input.focus();
+        return;
+      }
+
+      Q('#resultEmpty').hidden = true;
+      Q('#resultBody').hidden = false;
+      Q('#finalCard').hidden = true;
+      Q('#diag').hidden = true;
+      setCheck(1, 'pending', 'Reading your link\u2026');
+      setCheck(2, 'pending', 'Checking github.com\u2026');
+      setCheck(3, 'pending', 'Opening your public page\u2026');
+      setCheck(4, 'pending', 'Waiting for the checks above\u2026');
+
+      var btn = Q('#checkBtn');
+      btn.disabled = true;
+      Q('#checkBtnText').textContent = 'Checking\u2026';
+      focusStep(1, 1, true);
+
+      var api = 'https://api.github.com/repos/' + encodeURIComponent(p.owner) + '/' + encodeURIComponent(p.repo);
+      Promise.all([fetchJSON(api), probeSite(p.finalUrl)])
+        .then(function (res) { renderResult(p, res[0], res[1]); })
+        .catch(function () {
+          renderResult(p, { status: 0, network: true }, { status: 0, network: true });
+        });
+    });
+
+    Q('#copyLinkBtn').addEventListener('click', function () {
+      var url = Q('#finalUrl').textContent;
+      if (!url) { toast('Run the check in Step 1 first'); return; }
+      copyText(url).then(function (ok) { toast(ok ? 'Link copied \u2014 go to Step 3' : 'Copy failed \u2014 long-press the link'); });
+    });
+    Q('#copyPromptBtn').addEventListener('click', function () {
+      copyText(Q('#promptText').textContent.trim()).then(function (ok) {
+        toast(ok ? 'Prompt copied \u2014 paste it into any AI' : 'Copy failed \u2014 select the text manually');
+      });
+    });
+    Q('#toStep3').addEventListener('click', function () { focusStep(2, 2, true); });
+
+    setProgress(0, 0);
+  })();
+  </script>
+</body>
+</html>
