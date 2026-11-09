@@ -187,16 +187,23 @@
     .btn-primary:hover  { filter: brightness(0.94); box-shadow: 0 10px 26px rgba(13, 13, 13, 0.3); }
     .btn-primary:active { transform: scale(0.96); }   /* 点击缩放反馈 */
 
-    /* ---- 社交按钮组 ---- */
+    /* ---- 社交按钮组 / Count-driven equal-width socials ----
+       实际渲染几个平台就分几列 (--social-count 由 renderSocials 写入),
+       每列 1fr 等比例均分容器宽度; 没填内容的条目不渲染、不占位; 0 个时容器整体隐藏。 */
     .socials {
-      display: flex; justify-content: center; gap: 18px;
-      margin: 24px 0 6px; flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(var(--social-count, 1), minmax(0, 1fr));
+      gap: 10px;
+      margin: 24px 0 6px;
     }
+    /* 作者样式 display:grid/flex 会盖过 UA 的 [hidden], 必须显式声明 */
+    .socials[hidden], .modal-overlay[hidden] { display: none; }
     .social-btn {
-      width: 54px; height: 54px; border-radius: 50%;
+      width: min(54px, 100%); aspect-ratio: 1; height: auto;
+      margin: 0 auto; border-radius: 50%;
       border: 1px solid var(--glass-border);
       background: rgba(255, 255, 255, 0.10);
-      color: #fff; font-size: 21px;
+      color: #fff; font-size: clamp(14px, 4.2vw, 21px);
       display: flex; align-items: center; justify-content: center;
       cursor: pointer;
       transition: transform 0.15s ease, background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
@@ -471,10 +478,11 @@
     },
     en: {
       save: "Save Contact",
-      wechatTitle: "WeChat",
+      // 英文态不提供微信入口 (弹窗由 applyI18n 隐藏); 以下仅作隐藏态兜底文案, 不含 WeChat 字样
+      wechatTitle: "Contact",
       copyId: "Copy ID",
       qrPlaceholder: "Set qrImage in CARD_CONFIG to show your QR code",
-      toastIdCopied: "WeChat ID copied",
+      toastIdCopied: "ID copied",
       toastCopyFail: "Copy failed, please copy manually",
       toastSaved: "Contact saved",
       toastLinkCopied: "Link copied",
@@ -517,12 +525,17 @@
     if (hintText) hintText.textContent = t(IS_IOS ? "installHintIOS" : "installHintAndroid");
     const hintIcon = document.getElementById("installHintIcon");
     if (hintIcon) hintIcon.className = IS_IOS ? "fa-solid fa-share-nodes" : "fa-solid fa-ellipsis-v";
+    // 英文界面面向海外用户: 微信弹窗彻底禁用, 避免任何 WeChat 入口 / 字样露出
+    const wechatModal = document.getElementById("wechatModal");
+    if (wechatModal) wechatModal.hidden = (LANG === "en");
   }
 
   function setLang(lang) {
     LANG = lang;
     lsSet("nfc_card_lang", lang);
     applyI18n();
+    // 语言切换后社交按钮必须重渲染: 英文态把微信入口换成 X
+    renderSocials();
     // 已打开过的微信弹窗内容也需要刷新文案
     const overlay = document.getElementById("wechatModal");
     if (overlay.classList.contains("show")) {
@@ -550,6 +563,7 @@
   const SOCIAL_META = {
     linkedin:  { icon: "fa-brands fa-linkedin-in", color: "#0A66C2" },
     wechat:    { icon: "fa-brands fa-weixin",       color: "#07C160" },
+    x:         { icon: "fa-brands fa-x-twitter",    color: "#111111" },
     instagram: { icon: "fa-brands fa-instagram",    color: "#E4405F" },
     facebook:  { icon: "fa-brands fa-facebook-f",   color: "#1877F2" },
     twitter:   { icon: "fa-brands fa-x-twitter",    color: "#111111" },
@@ -632,10 +646,30 @@
     }
   }
 
+  // ---------- 按语言分流 + 动态数量 / Language-aware, count-driven socials ----------
+  // 英文界面面向海外用户: 微信入口换成 X; 中文界面保持原样。
+  // 没填内容的条目一律不渲染 —— 填几个显示几个, 0 个则整个容器隐藏。
+  const X_PROFILE_URL = "https://x.com/pmrcgh";
+  function hasSocialContent(item) {
+    if (item.platform === "wechat") return !!(item.wechatId || item.qrImage);
+    return !!(item.url && item.url !== "#");
+  }
+  function getActiveSocials() {
+    const list = (CARD_CONFIG.socials || []).filter(hasSocialContent);
+    if (LANG !== "en") return list;
+    return list.map(item => item.platform === "wechat"
+      ? { platform: "x", url: X_PROFILE_URL, label: "X" }
+      : item);
+  }
+
   // ---------- 渲染社交按钮 / Render social buttons ----------
   function renderSocials() {
     const container = document.getElementById("socials");
-    CARD_CONFIG.socials.forEach(item => {
+    container.innerHTML = "";              // 语言切换时重渲染, 先清空
+    const list = getActiveSocials();
+    container.hidden = list.length === 0;  // 0 个: 不展示任何 logo
+    container.style.setProperty("--social-count", String(Math.max(list.length, 1)));
+    list.forEach(item => {
       const meta = SOCIAL_META[item.platform] || { icon: "fa-solid fa-link", color: "#888" };
       const btn = document.createElement("button");
       btn.className = "social-btn";

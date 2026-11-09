@@ -1,9 +1,11 @@
 # README.dev — nfc-card (Developer & Designer Guide)
 ### 开发与设计文档 · 数字名片 / NFC 落地页模板
 
-> **中文摘要**：本文档说明 nfc-card 的整体架构（`index.html` 负责渲染 + `config.js` 是唯一数据源 + `editor.html` 可视化导出配置）、`CARD_CONFIG` 完整字段表、内置 10 个社交平台（`SOCIAL_META`）、vCard 生成与分享回退逻辑，以及 GitHub Pages 部署要点。**普通用户请看 [README.md](README.md)（英文）或 [README.zh-CN.md](README.zh-CN.md)（中文）**。
+> **中文摘要**：本文档说明 nfc-card 的整体架构（`index.html` 负责渲染 + `config.js` 是唯一数据源 + `editor.html` 可视化导出配置）、`CARD_CONFIG` 完整字段表、内置 11 个社交平台（`SOCIAL_META`，含 `x`）、**按语言分流 + 按数量等分的社交行渲染**、vCard 生成与分享回退逻辑，以及 GitHub Pages 部署要点。**普通用户请看 [README.md](README.md)（英文）或 [README.zh-CN.md](README.zh-CN.md)（中文）**。
 
 This document explains the **architecture, configuration schema, rendering behavior, and extension points** of the `nfc-card` template so developers and designers can understand, customize, or extend it. For end-user instructions, see [README.md](README.md); for AI agents, see [AGENT.md](AGENT.md).
+
+> 📌 **Note on line references**: `index.html:NNN` pointers below are indicative and drift as the single-file page is edited. Prefer searching by the named function or CSS selector (`generateVCF()`, `.socials`, `SOCIAL_META`, …), which are stable.
 
 The template is a **zero-config, single-file digital business card** that renders a polished landing page and is intended to be deployed on **GitHub Pages**. There is no build step, no framework, and no backend.
 
@@ -100,6 +102,8 @@ Each entry is one button.
 | `qrImage` | string *(optional)* | QR-code image URL shown in the WeChat modal. |
 | `label` | string | Human-readable name / aria-label for the button. |
 
+> **Rendering is count-driven and language-aware.** `renderSocials()` first drops entries with no content (`url === "#"` / empty; for `wechat`, empty `wechatId` **and** empty `qrImage`), then lays out however many remain. See §3.2 and §3.3 — you never edit CSS to change the number of icons.
+
 ### 2.6 `footer` — `{ showPhone, showEmail }`
 
 | Field | Type | Meaning |
@@ -118,6 +122,7 @@ Icons + brand colors are defined in `SOCIAL_META` inside `index.html` (`index.ht
 | Platform key | Icon class | Brand color |
 |--------------|------------|-------------|
 | `linkedin` | `fa-brands fa-linkedin-in` | `#0A66C2` |
+| `x` | `fa-brands fa-x-twitter` | `#111111` |
 | `wechat` | `fa-brands fa-weixin` | `#07C160` |
 | `instagram` | `fa-brands fa-instagram` | `#E4405F` |
 | `facebook` | `fa-brands fa-facebook-f` | `#1877F2` |
@@ -159,7 +164,62 @@ const PLATFORMS = [..., "tiktok"];
 const SOCIAL_ICONS = { ..., tiktok: "fa-brands fa-tiktok" };
 ```
 
-> Icon classes come from **FontAwesome** (loaded via CDN). Confirm the exact class name in the FontAwesome icon list before adding.
+> Icon classes come from **FontAwesome** (loaded via CDN). Confirm the exact class name in the FontAwesome icon list before adding. `x` reuses the same `fa-brands fa-x-twitter` glyph as the legacy `twitter` key — no extra icon library is loaded.
+
+### 3.2 Language-aware social mapping (EN vs 中文)
+
+There is **no separate English page**. Chinese and English share `index.html` and the same `config.js.socials[]` array; the language toggle only swaps labels/UI strings (`I18N.zh` / `I18N.en`, persisted in `localStorage` key `nfc_card_lang`).
+
+To serve overseas visitors who don't use WeChat, `getActiveSocials()` remaps the entry at runtime **only when `LANG === "en"`**:
+
+```js
+const X_PROFILE_URL = "https://x.com/pmrcgh";
+function getActiveSocials() {
+  const list = (CARD_CONFIG.socials || []).filter(hasSocialContent);
+  if (LANG !== "en") return list;
+  return list.map(item => item.platform === "wechat"
+    ? { platform: "x", url: X_PROFILE_URL, label: "X" }
+    : item);
+}
+```
+
+- The `wechat` entry stays in `config.js` because the **Chinese UI still needs the QR modal**; deleting it there would break Chinese.
+- `applyI18n()` additionally sets `wechatModal.hidden = (LANG === "en")` so no WeChat entry, label, or dialog is reachable in English.
+- `setLang()` calls `renderSocials()` after switching, otherwise the icon row would keep the previous language's platforms.
+- **To change the X handle, edit `X_PROFILE_URL` in `index.html`** (or refactor it into `CARD_CONFIG` if the card is forked). It is intentionally EN-only.
+
+### 3.3 Count-driven equal-width social row
+
+`.socials` is a CSS grid whose column count is written by JS:
+
+```css
+.socials {
+  display: grid;
+  grid-template-columns: repeat(var(--social-count, 1), minmax(0, 1fr));
+  gap: 10px;
+}
+/* Author `display:grid` overrides the UA [hidden] rule — declare it explicitly. */
+.socials[hidden] { display: none; }
+```
+
+```js
+function renderSocials() {
+  const container = document.getElementById("socials");
+  container.innerHTML = "";
+  const list = getActiveSocials();
+  container.hidden = list.length === 0;
+  container.style.setProperty("--social-count", String(Math.max(list.length, 1)));
+  /* ... create one .social-btn per item ... */
+}
+```
+
+| Filled links | Result |
+|--------------|--------|
+| 4 | 4 equal `1fr` columns |
+| 2 | 2 equal `1fr` columns (icons still evenly share the full row width) |
+| 0 | whole row hidden, no logo rendered |
+
+Two implementation gotchas: `style.setProperty()` must receive a **string** (`String(...)`, not a raw number) for older WebKit; and `.socials[hidden] { display: none; }` is mandatory because an author-level `display: grid` beats the UA stylesheet's `[hidden]` rule.
 
 ---
 
@@ -185,7 +245,10 @@ const SOCIAL_ICONS = { ..., tiktok: "fa-brands fa-tiktok" };
 - `shareCard()` (`index.html:518`) first tries the native **`navigator.share`** API (best mobile UX).
 - If unavailable or the user cancels, it **falls back to copying the page URL** to the clipboard via `copyText()` (`index.html:321`), with a `document.execCommand` fallback for non-HTTPS/local contexts.
 
-### 4.6 WeChat tap behavior
+### 4.6 WeChat tap behavior (Chinese UI only)
+
+> In English this entire path is disabled — see §3.2.
+
 - Tapping a `wechat` social button opens a modal (`openWechatModal`, `index.html:437`).
 - The modal shows `qrImage` if provided, otherwise a placeholder prompting you to set `qrImage` (`index.html:445`).
 - If `wechatId` is set, the modal shows the ID and a **"Copy ID"** button (`index.html:459`).
@@ -212,7 +275,8 @@ The footer renders a three-column grid of compact secondary actions (icon on top
 | Change avatar | Replace `avatar.png` in the repo **or** set `avatar.imageUrl` to a local/external URL; set `avatar.type: "image"`. For a letter-logo, use `type: "text"` + `avatar.text`. |
 | Toggle public phone | Set `footer.showPhone` (true/false). Phone always stays in the vCard. |
 | Toggle public email | Set `footer.showEmail` (true/false); only shows if `contact.email` is non-empty. |
-| Add/remove socials | Edit the `socials[]` array in `config.js` (see §3.1 for new platforms). |
+| Add/remove socials | Edit the `socials[]` array in `config.js` (see §3.1 for new platforms). The row re-flows automatically — 2 or 4 links both evenly fill the width; see §3.3. |
+| Change the English X handle | Edit `X_PROFILE_URL` in `index.html` (EN-only, see §3.2). |
 | Change bio lines | Edit `bio` in `config.js`, separating lines with `|`. |
 | Non-coder workflow | Open `editor.html`, fill the form, click **"生成 config.js"**, download, and replace `config.js` in the repo. |
 
@@ -237,7 +301,7 @@ The footer renders a three-column grid of compact secondary actions (icon on top
 
 - **Mobile-first**: the card is `max-width: 430px`, centered, and uses responsive units; the editor `editor.html` switches to a two-column layout at ≥760px.
 - **Safe-area insets**: `viewport-fit=cover` plus `env(safe-area-inset-top/bottom)` padding so content clears notches and home indicators (`index.html:17`, `index.html:69`, `index.html:213`).
-- **Glassmorphism**: achieved with `backdrop-filter: blur(22px) saturate(160%)` (with `-webkit-` prefix) on the card (`index.html:78`). Falls back gracefully where unsupported.
+- **Glassmorphism**: `backdrop-filter: blur(14px) saturate(160%)` (with `-webkit-` prefix) on `.card`, over `--glass-bg: rgba(255,255,255,0.05)`. Both values were tuned **down** from `blur(22px)` / `0.10` to fix a real-device issue where the card looked grey and inconsistent against the gradient background: a bright translucent white overlay plus a wide blur physically lifts the perceived color inside the card on AMOLED/OLED screens. Keep the blur/alpha low when retheming.
 - **No build step**: pure static HTML/CSS/JS; deploy as-is.
 - **Clipboard robustness**: `copyText()` prefers `navigator.clipboard` (secure context) and falls back to a hidden `<textarea>` + `execCommand` (`index.html:321`).
 - **Accessibility**: social buttons carry `aria-label`s; the WeChat modal supports `role="dialog"`, `aria-modal`, and Escape-to-close.

@@ -316,10 +316,10 @@ function escapeHtml(s) {
 
 const SOCIAL_ICONS = {
   linkedin:"fa-brands fa-linkedin-in", wechat:"fa-brands fa-weixin", instagram:"fa-brands fa-instagram",
-  facebook:"fa-brands fa-facebook-f", twitter:"fa-brands fa-x-twitter", github:"fa-brands fa-github",
+  facebook:"fa-brands fa-facebook-f", twitter:"fa-brands fa-x-twitter", x:"fa-brands fa-x-twitter", github:"fa-brands fa-github",
   youtube:"fa-brands fa-youtube", mail:"fa-solid fa-envelope", phone:"fa-solid fa-phone", website:"fa-solid fa-globe"
 };
-const PLATFORMS = ["linkedin","wechat","instagram","facebook","twitter","github","youtube","mail","phone","website"];
+const PLATFORMS = ["linkedin","wechat","x","instagram","facebook","twitter","github","youtube","mail","phone","website"];
 
 let cfg = (window.CARD_CONFIG && typeof window.CARD_CONFIG==="object") ? JSON.parse(JSON.stringify(window.CARD_CONFIG))
   : { name:"Your Name", title:"Your Title", bio:"Line one | Line two | Line three", avatar:{type:"text",imageUrl:"",text:"YN"},
